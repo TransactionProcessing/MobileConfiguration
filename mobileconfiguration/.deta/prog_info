@@ -1,0 +1,1 @@
+{"id":"c2994c49-fdb6-42dc-9f44-cf2f047ec318","space":1293,"runtime":"nodejs12.x","name":"mobileconfiguration","path":"pxj6yf","project":"a0f24j3l","account":"325177863433","region":"eu-west-2","deps":["body-parser@^1.19.0","express@^4.17.1","mssql@^6.2.3"],"envs":null,"public":true,"log_level":"debug","cron":"","reload_deps":false}
