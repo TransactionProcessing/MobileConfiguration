@@ -102,3 +102,10 @@ dist
 
 # TernJS port file
 .tern-port
+/.vs
+/TransactionProcessor.MobileConfiguration/.vs/TransactionProcessor.MobileConfiguration/v16
+/TransactionProcessor.MobileConfiguration/bin
+/TransactionProcessor.MobileConfiguration/obj/Debug
+/TransactionProcessor.MobileConfiguration/_ReSharper.Caches/ReSharperPlatformVs16202_a88a91cb.TransactionProcessor.MobileConfiguration.00
+/_ReSharper.Caches/ReSharperPlatformVs16202_a88a91cb.00
+/TransactionProcessor.MobileConfiguration/TransactionProcessor.MobileConfiguration.njsproj.user
