@@ -23,7 +23,7 @@ app.get('/configuration/:id',
           var request = new sql.Request();
 
             var query =
-            "select top 1 DeviceIdentifier, ClientId, ClientSecret, EstateManagement, TransactionProcessorACL from vwDeviceConfiguration where DeviceIdentifier = '" + req.params.id + "'";
+            "select top 1 DeviceIdentifier, ClientId, ClientSecret, SecurityService, EstateManagement, TransactionProcessorACL from vwDeviceConfiguration where DeviceIdentifier = '" + req.params.id + "'";
 
           console.log(query);
           // query to the database and get the records
@@ -40,6 +40,7 @@ app.get('/configuration/:id',
               "deviceIdentifier": record["DeviceIdentifier"],
               "clientId": record["ClientId"],
               "clientSecret": record["ClientSecret"],
+              "securityService": record["SecurityService"],
               "estateManagement": record["EstateManagement"],
               "transactionProcessorACL": record["TransactionProcessorACL"],
             }
