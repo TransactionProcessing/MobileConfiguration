@@ -74,5 +74,5 @@ app.post('/logging/:id', async (req,res) =>
 module.exports = app;    
 
 // Note: these 2 lines needed for local debugging only
-const port = 1337;
-app.listen(port, () => console.log(`Hello world app listening on port ${port}!`));
+//const port = 1337;
+//app.listen(port, () => console.log(`Hello world app listening on port ${port}!`));
