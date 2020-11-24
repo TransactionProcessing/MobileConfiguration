@@ -69,7 +69,19 @@ app.post('/logging/:id', async (req,res) =>
         
         // return a success
         res.status(201).send();    
-    });    
+    });
+    
+app.delete('/logging', async (req,res)=>
+{
+  var logs = await mobileLogsDatabase.fetch();
+  
+  for await (const subArray of logs) // each subArray is up to the buffer length, 10
+    subArray.forEach(l => {
+       mobileLogsDatabase.delete(l.key);
+    });
+
+  res.status(200).send();
+});    
 
 module.exports = app;    
 
