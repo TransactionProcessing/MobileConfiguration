@@ -48,24 +48,31 @@ app.get('/configuration/:id',
     });
 
 app.post('/logging/:id', async (req,res) =>
-    {      
+    {  
         // create the new log message
-        var logEntry = {
+        var messageArray = req.body.messages;
+        var logEntries = [];
+        
+        messageArray.forEach(message => {
+          var logEntry = {
             deviceIdentifier: req.params.id,
-            id: req.body.id,
-            message: req.body.message,
-            dateTime: req.body.entryDateTime,
-            logLevel: req.body.logLevel
-        };
+            id: message.Id,
+            message: message.Message,
+            dateTime: message.EntryDateTime,
+            logLevel: message.LogLevel
+          };  
+          logEntries.push(logEntry)
+        });
+        
         // Write to the database
-        const insertedLogEntry = await mobileLogsDatabase.put(logEntry); // put() will autogenerate a key for us
+        await mobileLogsDatabase.putMany(logEntries);
         
         // return a success
-        res.status(201).json(insertedLogEntry);    
+        res.status(201).send();    
     });    
 
 module.exports = app;    
 
 // Note: these 2 lines needed for local debugging only
-//const port = 1337;
-//app.listen(port, () => console.log(`Hello world app listening on port ${port}!`));
+const port = 1337;
+app.listen(port, () => console.log(`Hello world app listening on port ${port}!`));
