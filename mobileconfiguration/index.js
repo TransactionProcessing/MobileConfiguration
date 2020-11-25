@@ -41,11 +41,30 @@ app.get('/configuration/:id',
           "securityService": config.securityServiceUri,
           "estateManagement": config.estateManagementUri,
           "transactionProcessorACL": config.transactionProcessorACLUri,
-          "logLevel": config.logLevel
+          "logLevel": getLogLevel(config.logLevel)
         }
 
         res.send(JSON.stringify(result));
     });
+
+function getLogLevel(logLevel)
+{
+  switch(logLevel)
+  {
+    case "Trace":
+      return 5;
+    case "Debug":
+      return 4;
+    case "Info":
+      return 3;
+    case "Warn":
+      return 2;
+    case "Error":
+      return 1;
+    case "Fatal":
+      return 0;
+  }
+}
 
 app.post('/logging/:id', async (req,res) =>
     {  
