@@ -1,43 +1,32 @@
 var express = require('express');
 const { Deta } = require('deta');
-
-const deta = Deta();// No need to provide a key if running in a micro
-const mobileConfigDatabase = deta.Base('mobileconfig');  // access your DB
+const deta = Deta('a0f24j3l_aWcCT1TxDYep2DzQpNwFdP832EzQ11cG'); // configure your Deta project
 const mobileLogsDatabase = deta.Base('mobilelogs');  // access your DB
+const mobileConfigDatabase = deta.Base('mobileconfig');  // access your DB
 
 var app = express();
 
 app.use(express.json());
 
 app.post('/configuration', async function(req,res)
-{  
+{
+  console.log('In POST')
   // create the new config entry message
-  const configEntry = req.body;
-  configEntry.key = req.body.deviceIdentifier;
-
+  var configEntry = {
+    key: req.body.deviceIdentifier,
+    deviceIdentifier: req.body.deviceIdentifier,
+    clientId: req.body.clientId,
+    clientSecret: req.body.clientSecret,
+    securityServiceUri: req.body.securityServiceUri,
+    estateManagementUri: req.body.estateManagementUri,
+    transactionProcessorACLUri: req.body.transactionProcessorACLUri,
+    logLevel: req.body.logLevel    
+  };
   // Write to the database
   const insertedConfigEntry = await mobileConfigDatabase.put(configEntry);
-  
-  // return a success (created)
-  res.status(201).json(insertedConfigEntry); 
-  
-});
 
-app.put('/configuration/:id', async function(req,res)
-{  
-  var config = await mobileConfigDatabase.get(req.params.id);
-
-  const configEntry = req.body;
-
-  var mergedConfig = {...config, ...configEntry};
-  mergedConfig.key = req.params.id;
-
-  // Write to the database
-  await mobileConfigDatabase.put(mergedConfig);
-  
-  // return a success (created)
-  res.status(200).send(); 
-  
+  // return a success
+  res.status(201).json(insertedConfigEntry);
 });
 
 app.get('/configuration/:id',
@@ -45,8 +34,18 @@ app.get('/configuration/:id',
     {               
         var config = await mobileConfigDatabase.get(req.params.id);
       
-        // send records as a response        
-        res.send(JSON.stringify(config));
+        // send records as a response
+        var result = {
+          "deviceIdentifier": config.deviceIdentifier,
+          "clientId": config.clientId,
+          "clientSecret": config.clientSecret,
+          "securityService": config.securityServiceUri,
+          "estateManagement": config.estateManagementUri,
+          "transactionProcessorACL": config.transactionProcessorACLUri,
+          "logLevel": getLogLevel(config.logLevel)
+        }
+
+        res.send(JSON.stringify(result));
     });
 
 function getLogLevel(logLevel)
