@@ -3,6 +3,7 @@ const { Deta } = require('deta');
 
 const deta = Deta();// No need to provide a key if running in a micro
 const mobileConfigDatabase = deta.Base('mobileconfig');  // access your DB
+const voucherConfigDatabase = deta.Base('voucherconfig');  // access your DB
 const mobileLogsDatabase = deta.Base('mobilelogs');  // access your DB
 
 var app = express();
@@ -23,6 +24,20 @@ app.post('/configuration', async function(req,res)
   
 });
 
+app.post('/voucherconfiguration', async function(req,res)
+{  
+  // create the new config entry message
+  const configEntry = req.body;
+  configEntry.key = req.body.deviceIdentifier;
+
+  // Write to the database
+  const insertedConfigEntry = await voucherConfigDatabase.put(configEntry);
+  
+  // return a success (created)
+  res.status(201).json(insertedConfigEntry); 
+  
+});
+
 app.put('/configuration/:id', async function(req,res)
 {  
   var config = await mobileConfigDatabase.get(req.params.id);
@@ -34,6 +49,22 @@ app.put('/configuration/:id', async function(req,res)
 
   // Write to the database
   await mobileConfigDatabase.put(mergedConfig);
+  
+  // return a success (created)
+  res.status(200).send();     
+});
+
+app.put('/voucherconfiguration/:id', async function(req,res)
+{  
+  var config = await voucherConfigDatabase.get(req.params.id);
+
+  const configEntry = req.body;
+
+  var mergedConfig = {...config, ...configEntry};
+  mergedConfig.key = req.params.id;
+
+  // Write to the database
+  await voucherConfigDatabase.put(mergedConfig);
   
   // return a success (created)
   res.status(200).send(); 
@@ -48,6 +79,15 @@ app.get('/configuration/:id',
         // send records as a response        
         res.send(JSON.stringify(config));
     });
+
+app.get('/voucherconfiguration/:id',
+    async function(req, res)
+    {               
+        var config = await voucherConfigDatabase.get(req.params.id);
+      
+        // send records as a response        
+        res.send(JSON.stringify(config));
+    });    
 
 function getLogLevel(logLevel)
 {
