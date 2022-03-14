@@ -41,5 +41,5 @@ jobs:
       run: curl -fsSL https://get.deta.dev/cli.sh | sh
 
     - name: Login to Deta
-      run: 
+      run: deta login
     
