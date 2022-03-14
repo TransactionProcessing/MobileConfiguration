@@ -9,7 +9,7 @@ jobs:
     name: "Release"
     env:
         NODE_VERSION: '14.x'                # set this to the node version to use      
-
+        DETA_ACCESS_TOKEN : ${{ secrets.DETA_TOKEN }}
     runs-on: ubuntu-latest
 
     steps:
@@ -32,10 +32,14 @@ jobs:
       run: |
         npm install        
 
-    - name: Deploy to Deta Micro
-      uses: BogDAAAMN/deta-deploy-action@v1.0.1
-      with:
-        deta-access-token: ${{ secrets.DETA_TOKEN }} #Deta access token https://docs.deta.sh/docs/cli/auth
-        deta-name: 'mobileconfiguration' #Deta Micro name https://docs.deta.sh/docs/cli/commands/#deta-clone        
+    #- name: Deploy to Deta Micro
+    #  uses: BogDAAAMN/deta-deploy-action@v1.0.1
+    #  with:
+    #    deta-access-token: ${{ secrets.DETA_TOKEN }} #Deta access token https://docs.deta.sh/docs/cli/auth
+    #    deta-name: 'mobileconfiguration' #Deta Micro name https://docs.deta.sh/docs/cli/commands/#deta-clone        
+    - name: Install Deta CLI
+      run: curl -fsSL https://get.deta.dev/cli.sh | sh
 
+    - name: Login to Deta
+      run: 
     
