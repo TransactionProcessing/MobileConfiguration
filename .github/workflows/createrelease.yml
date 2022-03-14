@@ -36,6 +36,7 @@ jobs:
       uses: BogDAAAMN/deta-deploy-action@v1.0.1
       with:
         deta-access-token: ${{ secrets.DETA_TOKEN }} #Deta access token https://docs.deta.sh/docs/cli/auth
-        deta-name: 'mobileconfiguration' #Deta Micro name https://docs.deta.sh/docs/cli/commands/#deta-clone        
+        deta-name: 'mobileconfiguration' #Deta Micro name https://docs.deta.sh/docs/cli/commands/#deta-clone 
+        deta-project-dir: 'mobileconfiguration'
 
     
