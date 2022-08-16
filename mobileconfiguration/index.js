@@ -2,6 +2,7 @@ var express = require('express');
 const { Deta } = require('deta');
 
 const deta = Deta();// No need to provide a key if running in a micro
+const appCenterConfigDatabase = deta.Base('appCenterconfig');  // access your DB
 const mobileConfigDatabase = deta.Base('mobileconfig');  // access your DB
 const voucherConfigDatabase = deta.Base('voucherconfig');  // access your DB
 const mobileLogsDatabase = deta.Base('mobilelogs');  // access your DB
@@ -35,7 +36,19 @@ app.post('/voucherconfiguration', async function(req,res)
   
   // return a success (created)
   res.status(201).json(insertedConfigEntry); 
+});
+
+app.post('/appcenterconfiguration', async function(req,res)
+{  
+  // create the new config entry message
+  const configEntry = req.body;
+  configEntry.key = req.body.applicationId;
+
+  // Write to the database
+  const insertedConfigEntry = await appCenterConfigDatabase.put(configEntry);
   
+  // return a success (created)
+  res.status(201).json(insertedConfigEntry);   
 });
 
 app.put('/configuration/:id', async function(req,res)
@@ -68,14 +81,32 @@ app.put('/voucherconfiguration/:id', async function(req,res)
   
   // return a success (created)
   res.status(200).send(); 
+});
+
+app.put('/appcenterconfiguration/:id', async function(req,res)
+{  
+  var config = await appCenterConfigDatabase.get(req.params.id);
+
+  const configEntry = req.body;
+
+  var mergedConfig = {...config, ...configEntry};
+  mergedConfig.key = req.params.id;
+
+  // Write to the database
+  await appCenterConfigDatabase.put(mergedConfig);
   
+  // return a success (created)
+  res.status(200).send();     
 });
 
 app.get('/configuration/:id',
     async function(req, res)
     {               
         var config = await mobileConfigDatabase.get(req.params.id);
-      
+        var appCenterconfig = await appCenterConfigDatabase.get("transactionMobilePOS");
+
+        config.appCenterconfig = appCenterconfig;
+
         // send records as a response        
         res.send(JSON.stringify(config));
     });
@@ -88,6 +119,15 @@ app.get('/voucherconfiguration/:id',
         // send records as a response        
         res.send(JSON.stringify(config));
     });    
+
+app.get('/appcenterconfiguration/:id',
+    async function(req, res)
+    {               
+        var config = await appCenterConfigDatabase.get(req.params.id);
+      
+        // send records as a response        
+        res.send(JSON.stringify(config));
+    });
 
 function getLogLevel(logLevel)
 {
@@ -147,5 +187,5 @@ app.delete('/logging', async (req,res)=>
 module.exports = app;    
 
 // Note: these 2 lines needed for local debugging only
-//const port = 1337;
-//app.listen(port, () => console.log(`Hello world app listening on port ${port}!`));
+const port = 1337;
+app.listen(port, () => console.log(`Hello world app listening on port ${port}!`));
