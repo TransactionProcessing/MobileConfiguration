@@ -8,8 +8,8 @@ jobs:
   build:
     name: "Release"
     env:
-        NODE_VERSION: '14.x'                # set this to the node version to use      
-        DETA_ACCESS_TOKEN : ${{ secrets.DETA_TOKEN }}
+        ASPNETCORE_ENVIRONMENT: "Production"
+
     runs-on: ubuntu-latest
 
     steps:
@@ -19,22 +19,103 @@ jobs:
       id: get_version
       run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
-    - name: Setup Node.js ${{ env.NODE_VERSION }}
-      uses: actions/setup-node@v1.4.4
+    - name: Install NET 7
+      uses: actions/setup-dotnet@v2
       with:
-        node-version: ${{ env.NODE_VERSION }}
+        dotnet-version: '7.0.x'
+
+    - name: Restore Nuget Packages
+      run: dotnet restore MobileConfiguration.sln --source https://api.nuget.org/v3/index.json --source https://www.myget.org/F/transactionprocessing/api/v3/index.json
+
+    - name: Build Code
+      run: dotnet build MobileConfiguration.sln --configuration Release
+
+    #- name: Run Unit Tests
+    #  run: |
+    #    echo "ASPNETCORE_ENVIRONMENT are > ${ASPNETCORE_ENVIRONMENT}"
+    #    dotnet test "TransactionProcessor.BusinessLogic.Tests\TransactionProcessor.BusinessLogic.Tests.csproj"       
+        
+    - name: Publish Images to Docker Hub - Pre Release
+      if: ${{ github.event.release.prerelease == true }} 
+      run: |
+        docker build . --file MobileConfiguration/Dockerfile --tag stuartferguson/mobileconfiguration:dev
+        docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
+        docker push stuartferguson/mobileconfiguration:dev
+
+    - name: Publish Images to Docker Hub - Formal Release
+      if: ${{ github.event.release.prerelease == false }} 
+      run: |
+        docker build . --file MobileConfiguration/Dockerfile --tag stuartferguson/mobileconfiguration:latest
+        docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
+        docker push stuartferguson/mobileconfiguration:latest
+
+    - name: Publish API
+      if: ${{ github.event.release.prerelease == false }}
+      run: dotnet publish "MobileConfiguration\MobileConfiguration.csproj" --configuration Release --output publishOutput
+
+    - name: Install Octopus CLI
+      if: ${{ github.event.release.prerelease == false }}
+      run: |
+        sudo apt update && sudo apt install --no-install-recommends gnupg curl ca-certificates apt-transport-https && \
+        curl -sSfL https://apt.octopus.com/public.key | sudo apt-key add - && \
+        sudo sh -c "echo deb https://apt.octopus.com/ stable main > /etc/apt/sources.list.d/octopus.com.list" && \
+        sudo apt update && sudo apt install octopuscli
+
+    - name: Pack Files for Octopus
+      if: ${{ github.event.release.prerelease == false }}
+      run: >-
+        octo pack
+        --outFolder /home/runner/work/MobileConfiguration/MobileConfiguration
+        --basePath /home/runner/work/MobileConfiguration/MobileConfiguration/publishOutput
+        --id MobileConfiguration
+        --version ${{ steps.get_version.outputs.VERSION }}
+        --format zip
+        --verbose
+        --logLevel=verbose
+
+    - name: Push Package to Octopus
+      if: ${{ github.event.release.prerelease == false }}
+      run: >-
+        octo push
+        --server ${{ secrets.OCTOPUS_URL }}
+        --apiKey ${{ secrets.OCTOPUS_APIKEY }}
+        --package /home/runner/work/MobileConfiguration/MobileConfiguration/MobileConfiguration.${{ steps.get_version.outputs.VERSION }}.zip
+        --overwrite-mode IgnoreIfExists
     
-    - name: Update npm
-      run: |
-        npm install npm@latest
-
-    - name: Run Unit Tests
-      run: |
-        npm install        
-
-    - name: Deploy to Deta Micro
-      uses: BogDAAAMN/deta-deploy-action@v1.0.1
+    - name: Get Release
+      if: ${{ github.event.release.prerelease == false }}
+      id: getrelease
+      uses: octokit/request-action@v2.0.17
       with:
-        deta-access-token: ${{ secrets.DETA_TOKEN }} #Deta access token https://docs.deta.sh/docs/cli/auth
-        deta-name: 'mobileconfiguration' #Deta Micro name https://docs.deta.sh/docs/cli/commands/#deta-clone        
-        deta-project-dir: 'mobileconfiguration'
+          route: GET /repos/StuartFerguson/MobileConfiguration/releases/tags/${{ steps.get_version.outputs.VERSION }}
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build Release Notes
+      if: ${{ github.event.release.prerelease == false }}
+      id: buildreleasenotes
+      uses: gr2m/get-json-paths-action@v1.0.4
+      with:
+          json: ${{ steps.getrelease.outputs.data }}
+          releasenote: "body"
+    
+    - name: Create & Deploy Release in Octopus
+      if: ${{ github.event.release.prerelease == false }}
+      run: >-
+        octo create-release
+        --server ${{ secrets.OCTOPUS_URL }}
+        --apiKey ${{ secrets.OCTOPUS_APIKEY }}
+        --project "Mobile Configuration"
+        --version ${{ steps.get_version.outputs.VERSION }}
+        --channel Default
+        --deployTo Staging
+        --waitfordeployment
+        --deploymenttimeout 00:05:00
+        --releasenotes "${{ steps.buildreleasenotes.outputs.releasenote }}" 
+
+    #- name: Build and Publish Nuget Packages
+    #  if: ${{ github.event.release.prerelease == false }}
+    #  run: |
+    #    dotnet pack "TransactionProcessor.Client\TransactionProcessor.Client.csproj" /p:PackageVersion=${{ steps.get_version.outputs.VERSION }} --output Nugets
+    #    dotnet nuget push Nugets/TransactionProcessor.Client.${{ steps.get_version.outputs.VERSION }}.nupkg --api-key ${{ secrets.MYGET_APIKEY }} --source https://www.myget.org/F/transactionprocessing/api/v2/package
+        

@@ -1,0 +1,70 @@
+name: Nightly Build
+
+on:
+  schedule:
+  - cron: "10 23 * * *"
+  repository_dispatch:
+
+jobs:
+  build:
+    name: "Nightly Build"
+    env:
+        ASPNETCORE_ENVIRONMENT: "Production"
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2.3.4
+
+    - name: Set Up Variables
+      run: echo "action_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >> $GITHUB_ENV
+
+    - name: Install NET 7
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: '7.0.x'
+
+    - name: Restore Nuget Packages
+      run: dotnet restore MobileConfiguration.sln --source https://api.nuget.org/v3/index.json --source https://www.myget.org/F/transactionprocessing/api/v3/index.json
+
+    - name: Build Code
+      run: dotnet build MobileConfiguration.sln --configuration Release
+        
+    #- name: Run Unit Tests
+    #  run: |
+    #    echo "ASPNETCORE_ENVIRONMENT are > ${ASPNETCORE_ENVIRONMENT}"
+    #    dotnet test "TransactionProcessor.BusinessLogic.Tests\TransactionProcessor.BusinessLogic.Tests.csproj" -e:CollectCoverage=true -e:Exclude="[xunit*]*" -e:CoverletOutput="../lcov1.info" /maxcpucount:1 -e:CoverletOutputFormat="lcov" -e:ExcludeByAttribute="Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute"
+        
+    #- name: Setup Node.js for use with actions
+    #  uses: actions/setup-node@v1.4.4
+    
+    #- name: Combine Coverage
+    #  run: |
+    #    npm i lcov-result-merger
+    #    ./node_modules/lcov-result-merger/bin/lcov-result-merger.js '*.info' 'lcov.info' 
+
+    #- name: Upload coverage reports to Codecov
+    #  uses: codecov/codecov-action@v3  
+    #  with:
+    #    files: ./lcov1.info,./lcov2.info,./lcov3.info,./lcov4.info,./lcov5.info,./lcov6.info,./lcov7.info
+        
+    #- name: Build Docker Image
+    #  run: docker build . --file MobileConfiguration/Dockerfile --tag mobileconfiguration:latest
+
+    #- name: Run Integration Tests
+    #  run: dotnet test "TransactionProcessor.IntegrationTests\TransactionProcessor.IntegrationTests.csproj"
+
+    #- uses: actions/upload-artifact@v2
+    #  if: ${{ failure() }}
+    #  with:
+    #    name: tracelogs
+    #    path: /home/txnproc/trace/   
+
+    - uses: dacbd/create-issue-action@main
+      if: ${{ failure() }}
+      name: Create an issue on build failure
+      with:
+        title: Investigate Nightly Build Failure
+        token: ${{secrets.GITHUB_TOKEN}}
+        labels: nightlybuild
+        body: Url is ${{env.action_url}}
