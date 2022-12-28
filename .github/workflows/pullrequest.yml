@@ -9,24 +9,38 @@ jobs:
   build:
     name: "Build and Test Pull Requests"
     env:
-      NODE_VERSION: '14.x'                # set this to the node version to use      
+        ASPNETCORE_ENVIRONMENT: "Production"
 
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2.3.4
 
-    - name: Setup Node.js ${{ env.NODE_VERSION }}
-      uses: actions/setup-node@v1.4.4
+    - name: Install NET 7
+      uses: actions/setup-dotnet@v2
       with:
-        node-version: ${{ env.NODE_VERSION }}
-    
-    - name: Update npm
-      run: |
-        npm install npm@latest
+        dotnet-version: '7.0.x'
 
-    - name: Run Unit Tests
-      run: |
-        npm install        
+    - name: Restore Nuget Packages
+      run: dotnet restore MobileConfiguration.sln --source https://api.nuget.org/v3/index.json --source https://www.myget.org/F/transactionprocessing/api/v3/index.json
 
-    
+    - name: Build Code
+      run: dotnet build MobileConfiguration.sln --configuration Release
+
+    #- name: Run Unit Tests
+    #  run: |
+    #    echo "ASPNETCORE_ENVIRONMENT are > ${ASPNETCORE_ENVIRONMENT}"
+    #    dotnet test "TransactionProcessor.BusinessLogic.Tests\TransactionProcessor.BusinessLogic.Tests.csproj"
+        
+
+    #- name: Build Docker Image
+    #  run: docker build . --file TransactionProcessor/Dockerfile --tag transactionprocessor:latest
+
+    #- name: Run Integration Tests
+    #  run: dotnet test "TransactionProcessor.IntegrationTests\TransactionProcessor.IntegrationTests.csproj" --filter Category=PRTest
+
+    #- uses: actions/upload-artifact@v2
+    #  if: ${{ failure() }}
+    #  with:
+    #    name: tracelogs
+    #    path: /home/txnproc/trace/   
