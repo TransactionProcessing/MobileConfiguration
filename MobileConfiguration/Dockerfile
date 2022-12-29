@@ -3,11 +3,11 @@ WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /src
-COPY ["NuGet.Config", "."]
-COPY ["MobileConfiguration.csproj", "."]
-RUN dotnet restore "./MobileConfiguration.csproj"
+COPY ["MobileConfiguration/NuGet.Config", "."]
+COPY ["MobileConfiguration/MobileConfiguration.csproj", "."]
+RUN dotnet restore "MobileConfiguration/MobileConfiguration.csproj"
 COPY . .
-WORKDIR "/src/."
+WORKDIR "/src/MobileConfiguration"
 RUN dotnet build "MobileConfiguration.csproj" -c Release -o /app/build
 
 FROM build AS publish
