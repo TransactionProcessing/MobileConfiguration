@@ -22,7 +22,7 @@ jobs:
         dotnet-version: '7.0.x'
 
     - name: Restore Nuget Packages
-      run: dotnet restore MobileConfiguration.sln --source https://api.nuget.org/v3/index.json --source https://www.myget.org/F/transactionprocessing/api/v3/index.json
+      run: dotnet restore MobileConfiguration.sln --source ${{ secrets.PUBLICFEEDURL }} --source ${{ secrets.PRIVATEFEED_URL }}
 
     - name: Build Code
       run: dotnet build MobileConfiguration.sln --configuration Release
