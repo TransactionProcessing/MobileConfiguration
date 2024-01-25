@@ -13,7 +13,7 @@ jobs:
     name: Build and analyze
     runs-on: windows-latest
     steps:
-       - name: Set up JDK
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
