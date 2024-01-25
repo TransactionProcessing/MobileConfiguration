@@ -11,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
 using Shared.Logger;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
+using Microsoft.Extensions.Hosting;
 
 IConfigurationRoot configuration = new ConfigurationBuilder()
                                    .AddJsonFile("appsettings.json")
@@ -19,7 +20,8 @@ IConfigurationRoot configuration = new ConfigurationBuilder()
 
 ConfigurationReader.Initialise(configuration);
 
-var builder = WebApplication.CreateBuilder(args);
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+builder.Host.UseWindowsService();
 String path = Assembly.GetExecutingAssembly().Location;
 path = Path.GetDirectoryName(path);
 builder.Configuration.SetBasePath(path)
