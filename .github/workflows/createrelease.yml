@@ -51,8 +51,7 @@ jobs:
 
     - name: Publish API
       if: ${{ github.event.release.prerelease == false }}
-      run: dotnet publish "MobileConfiguration\MobileConfiguration.csproj" --configuration Release --output publishOutput
-
+      run: dotnet publish "MobileConfiguration\MobileConfiguration.csproj" --configuration Release --output publishOutput -r win-x64 --self-contained
     - name: Create Zip package 🐙
       id: package
       uses: OctopusDeploy/create-zip-package-action@v3
