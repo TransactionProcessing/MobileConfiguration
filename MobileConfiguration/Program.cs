@@ -12,6 +12,7 @@ using NLog.Extensions.Logging;
 using Shared.Logger;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 using Microsoft.Extensions.Hosting;
+using Shared.Middleware;
 
 IConfigurationRoot configuration = new ConfigurationBuilder()
                                    .AddJsonFile("appsettings.json")
@@ -63,10 +64,31 @@ builder.Services.AddSingleton<Func<String, ConfigurationGenericContext>>(cont =>
                                                                                      }
                                                                                  });
 
+bool logRequests = ConfigurationReaderExtensions.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogRequests", true);
+bool logResponses = ConfigurationReaderExtensions.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogResponses", true);
+LogLevel middlewareLogLevel = ConfigurationReaderExtensions.GetValueOrDefault<LogLevel>("MiddlewareLogging", "MiddlewareLogLevel", LogLevel.Warning);
+
+RequestResponseMiddlewareLoggingConfig config =
+    new RequestResponseMiddlewareLoggingConfig(middlewareLogLevel, logRequests, logResponses);
+
+builder.Services.AddSingleton(config);
+
 
 var app = builder.Build();
 
 String nlogConfigFilename = "nlog.config";
+
+if (app.Environment.IsDevelopment())
+{
+    var developmentNlogConfigFilename = "nlog.development.config";
+    if (File.Exists(Path.Combine(app.Environment.ContentRootPath, developmentNlogConfigFilename)))
+    {
+        nlogConfigFilename = developmentNlogConfigFilename;
+    }
+
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 
@@ -79,12 +101,6 @@ Logger.Initialise(logger);
 
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
 app.UseAuthorization();
 
 app.AddRequestLogging();
@@ -109,6 +125,28 @@ async Task InitializeDatabase(IApplicationBuilder app)
         if (dbContext!= null && dbContext.Database.IsRelational())
         {
             dbContext.Database.Migrate();
+        }
+    }
+}
+
+public static class ConfigurationReaderExtensions
+{
+    public static T GetValueOrDefault<T>(String sectionName, String keyName, T defaultValue)
+    {
+        try
+        {
+            var value = ConfigurationReader.GetValue(sectionName, keyName);
+
+            if (String.IsNullOrEmpty(value))
+            {
+                return defaultValue;
+            }
+
+            return (T)Convert.ChangeType(value, typeof(T));
+        }
+        catch (KeyNotFoundException kex)
+        {
+            return defaultValue;
         }
     }
 }
