@@ -5,7 +5,7 @@ on:
     types: [published]
 
 jobs:
-  build:
+  buildlinux:
     name: "Release"
     env:
         ASPNETCORE_ENVIRONMENT: "Production"
@@ -52,80 +52,87 @@ jobs:
     - name: Publish API
       if: ${{ github.event.release.prerelease == false }}
       run: dotnet publish "MobileConfiguration\MobileConfiguration.csproj" --configuration Release --output publishOutput -r win-x64 --self-contained
-    - name: Create Zip package 🐙
-      id: package
-      uses: OctopusDeploy/create-zip-package-action@v3
-      with:
-        package_id: MobileConfiguration
-        version: ${{ steps.get_version.outputs.VERSION }}
-        base_path: /home/runner/work/MobileConfiguration/MobileConfiguration/publishOutput
-        files: "**/*"
-        output_folder: /home/runner/work/MobileConfiguration/MobileConfiguration
-
-    - name: Push a package to Octopus Deploy 🐙
-      uses: OctopusDeploy/push-package-action@v3
-      with:
-        api_key: ${{ secrets.OCTOPUS_APIKEY }}
-        server: ${{ secrets.OCTOPUS_URL }}
-        space: ${{ secrets.OCTOPUS_SPACE }}
-        packages: ${{ steps.package.outputs.package_file_path }}
     
-    - name: Get Release
-      if: ${{ github.event.release.prerelease == false }}
-      id: getrelease
-      uses: octokit/request-action@v2.0.17
-      with:
-          route: GET /repos/StuartFerguson/MobileConfiguration/releases/tags/${{ steps.get_version.outputs.VERSION }}
-      env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build Release Package
+      run: |
+         cd /home/runner/work/MobileConfiguration/MobileConfiguration/publishOutput
+         zip -r ../mobileconfiguration.zip ./*
 
-    - name: Build Release Notes
-      if: ${{ github.event.release.prerelease == false }}
-      id: buildreleasenotes
-      uses: gr2m/get-json-paths-action@v1.0.4
+    - name: Upload the artifact
+      uses: actions/upload-artifact@v3
       with:
-          json: ${{ steps.getrelease.outputs.data }}
-          releasenote: "body"
+        name: mobileconfiguration
+        path: mobileconfiguration.zip
 
-    - name: Create a release in Octopus Deploy 🐙
-      uses: OctopusDeploy/create-release-action@v3
-      id: "create_release"
-      with:
-        api_key: ${{ secrets.OCTOPUS_APIKEY }}
-        server: ${{ secrets.OCTOPUS_URL }}
-        space: ${{ secrets.OCTOPUS_SPACE }}
-        project: "Mobile Configuration"
-        package_version: ${{ steps.get_version.outputs.VERSION }}
-        release_notes: ${{ steps.buildreleasenotes.outputs.releasenote }}
-        release_number: ${{ steps.get_version.outputs.VERSION }}
-        ignore_existing: true
-        channel: "Default"
-
-    - name: Deploy a release in Octopus Deploy 🐙
-      uses: OctopusDeploy/deploy-release-action@v3
-      id: "deploy_release"
-      with:
-        api_key: ${{ secrets.OCTOPUS_APIKEY }}
-        server: ${{ secrets.OCTOPUS_URL }}
-        space: ${{ secrets.OCTOPUS_SPACE }}
-        project: "Mobile Configuration"
-        release_number: ${{steps.create_release.outputs.release_number}}
-        environments: |
-            Staging      
-            
-    - name: Await task in Octopus Deploy 🐙
-      uses: OctopusDeploy/await-task-action@v3
-      with:
-        api_key: ${{ secrets.OCTOPUS_APIKEY }}
-        server: ${{ secrets.OCTOPUS_URL }}
-        space: ${{ secrets.OCTOPUS_SPACE }}
-        timeout_after: 300
-        polling_interval: 30
-        server_task_id: ${{ fromJson(steps.deploy_release.outputs.server_tasks)[0].serverTaskId }}
 
     #- name: Build and Publish Nuget Packages
     #  if: ${{ github.event.release.prerelease == false }}
     #  run: |
     #    dotnet pack "TransactionProcessor.Client\TransactionProcessor.Client.csproj" /p:PackageVersion=${{ steps.get_version.outputs.VERSION }} --output Nugets
     #    dotnet nuget push Nugets/TransactionProcessor.Client.${{ steps.get_version.outputs.VERSION }}.nupkg --api-key ${{ secrets.MYGET_APIKEY }} --source https://www.myget.org/F/transactionprocessing/api/v2/package
-        
+
+  deploystaging:
+    runs-on: stagingserver
+    needs: buildlinux
+    environment: staging
+    name: "Deploy to Staging"
+    
+    steps:
+      - name: Download the artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: mobileconfiguration
+
+      - name: Remove existing  Windows service
+        run: |
+          $serviceName = "Transaction Processing - Mobile Configuration"
+          # Check if the service exists
+          if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) {
+            Stop-Service -Name $serviceName
+            sc.exe delete $serviceName
+          }
+
+      - name: Unzip the files
+        run: |
+          Expand-Archive -Path mobileconfiguration.zip -DestinationPath "C:\txnproc\transactionprocessing\mobileconfiguration" -Force
+      
+      - name: Install as a Windows service
+        run: |
+          $serviceName = "Transaction Processing - Mobile Configuration"
+          $servicePath = "C:\txnproc\transactionprocessing\mobileconfiguration\MobileConfiguration.exe"
+                   
+          New-Service -Name $serviceName -BinaryPathName $servicePath -Description "Transaction Processing - Mobile Configuration" -DisplayName "Transaction Processing - Mobile Configuration" -StartupType Automatic
+          Start-Service -Name $serviceName          
+
+  deployproduction:
+    runs-on: productionserver
+    needs: [buildlinux, deploystaging]
+    environment: production
+    name: "Deploy to Production"
+    
+    steps:
+      - name: Download the artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: mobileconfiguration
+
+      - name: Remove existing  Windows service
+        run: |
+          $serviceName = "Transaction Processing - Mobile Configuration"
+          # Check if the service exists
+          if (Get-Service -Name $serviceName -ErrorAction SilentlyContinue) {
+            Stop-Service -Name $serviceName
+            sc.exe delete $serviceName
+          }
+
+      - name: Unzip the files
+        run: |
+          Expand-Archive -Path mobileconfiguration.zip -DestinationPath "C:\txnproc\transactionprocessing\mobileconfiguration" -Force
+      
+      - name: Install as a Windows service
+        run: |
+          $serviceName = "Transaction Processing - Mobile Configuration"
+          $servicePath = "C:\txnproc\transactionprocessing\mobileconfiguration\MobileConfiguration.exe"
+                   
+          New-Service -Name $serviceName -BinaryPathName $servicePath -Description "Transaction Processing - Mobile Configuration" -DisplayName "Transaction Processing - Mobile Configuration" -StartupType Automatic
+          Start-Service -Name $serviceName          
