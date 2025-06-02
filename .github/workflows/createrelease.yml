@@ -19,10 +19,10 @@ jobs:
       id: get_version
       run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
 
-    - name: Install NET 8
-      uses: actions/setup-dotnet@v2
+    - name: Install NET 9
+      uses: actions/setup-dotnet@v4.0.1
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '9.0.x'
 
     - name: Restore Nuget Packages
       run: dotnet restore MobileConfiguration.sln --source ${{ secrets.PUBLICFEEDURL }} --source ${{ secrets.PRIVATEFEED_URL }}
