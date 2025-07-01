@@ -10,7 +10,7 @@ using MobileConfiguration.Database;
 
 namespace MobileConfiguration.Database.Migrations.SqlServer
 {
-    [DbContext(typeof(ConfigurationSqlServerContext))]
+    [DbContext(typeof(ConfigurationContext))]
     [Migration("20221219183510_InitialDatabase")]
     partial class InitialDatabase
     {

@@ -11,44 +11,18 @@ using MobileConfiguration.Database;
 namespace MobileConfiguration.Database.Migrations.SqlServer
 {
     [DbContext(typeof(ConfigurationContext))]
-    [Migration("20221220073139_AddAppCentreConfig")]
-    partial class AddAppCentreConfig
+    [Migration("20250701174128_remove_appcentre_config")]
+    partial class remove_appcentre_config
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.1")
+                .HasAnnotation("ProductVersion", "9.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("MobileConfiguration.Database.Entities.ApplicationCentreConfiguration", b =>
-                {
-                    b.Property<string>("ApplicationId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("AndroidKey")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("IosKey")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("MacosKey")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("WindowsKey")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("ApplicationId");
-
-                    b.ToTable("ApplicationCentreConfigurations");
-                });
 
             modelBuilder.Entity("MobileConfiguration.Database.Entities.Configuration", b =>
                 {

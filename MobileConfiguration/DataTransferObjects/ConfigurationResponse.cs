@@ -1,9 +1,8 @@
 ﻿namespace MobileConfiguration.DataTransferObjects;
 
-public class Configuration
+public class ConfigurationResponse
 {
     public string ClientId { get; set; }
-
     public string ClientSecret { get; set; }
 
     public string DeviceIdentifier { get; set; }
