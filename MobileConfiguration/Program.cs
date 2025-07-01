@@ -1,18 +1,19 @@
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using MobileConfiguration.Database;
 using MobileConfiguration.Repository;
+using NLog.Extensions.Logging;
 using Shared.EntityFramework;
+using Shared.Extensions;
 using Shared.General;
+using Shared.Logger;
+using Shared.Middleware;
 using Shared.Repositories;
 using System.Reflection;
-using Shared.Extensions;
-using Microsoft.Extensions.Logging;
-using NLog.Extensions.Logging;
-using Shared.Logger;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
-using Microsoft.Extensions.Hosting;
-using Shared.Middleware;
 
 IConfigurationRoot configuration = new ConfigurationBuilder()
                                    .AddJsonFile("appsettings.json")
@@ -37,32 +38,21 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IConfigurationRepository, ConfigurationRepository>();
 builder.Services.AddSingleton<IConnectionStringConfigurationRepository, ConfigurationReaderConnectionStringRepository>();
-builder.Services.AddSingleton<Shared.EntityFramework.IDbContextFactory<ConfigurationGenericContext>, DbContextFactory<ConfigurationGenericContext>>();
+builder.Services.AddSingleton<Shared.EntityFramework.IDbContextFactory<ConfigurationContext>, DbContextFactory<ConfigurationContext>>();
 
-builder.Services.AddSingleton<Func<String, ConfigurationGenericContext>>(cont => connectionString => {
-                                                                                     String databaseEngine =
-                                                                                         ConfigurationReader.GetValue("AppSettings", "DatabaseEngine");
+Boolean isInMemoryDatabase = Boolean.Parse(ConfigurationReader.GetValue("AppSettings", "InMemoryDatabase"));
 
-                                                                                     Boolean isInMemoryDatabase =
-                                                                                         Boolean.Parse(ConfigurationReader.GetValue("AppSettings", "InMemoryDatabase"));
-
-                                                                                     if (isInMemoryDatabase) {
-                                                                                         DbContextOptions<ConfigurationGenericContext> contextOptions =
-                                                                                             new DbContextOptionsBuilder<ConfigurationGenericContext>()
-                                                                                                 .UseInMemoryDatabase("ConfigurationDatabaseTest")
-                                                                                                 .ConfigureWarnings(b => b.Ignore(InMemoryEventId
-                                                                                                     .TransactionIgnoredWarning)).Options;
-                                                                                         return new ConfigurationGenericContext(contextOptions);
-                                                                                     }
-                                                                                     else {
-                                                                                         return databaseEngine switch {
-                                                                                             "MySql" => new ConfigurationMySqlContext(connectionString),
-                                                                                             "SqlServer" => new ConfigurationSqlServerContext(connectionString),
-                                                                                             _ => throw new
-                                                                                                 NotSupportedException($"Unsupported Database Engine {databaseEngine}")
-                                                                                         };
-                                                                                     }
-                                                                                 });
+if (isInMemoryDatabase) {
+    builder.Services.AddDbContext<ConfigurationContext>(builder => builder.UseInMemoryDatabase("ConfigurationDatabaseTest"));
+    DbContextOptionsBuilder<ConfigurationContext> contextBuilder = new DbContextOptionsBuilder<ConfigurationContext>();
+    contextBuilder = contextBuilder.UseInMemoryDatabase("ConfigurationDatabaseTest");
+    builder.Services.AddSingleton<Func<String, ConfigurationContext>>(cont => (connectionString) => new ConfigurationContext(contextBuilder.Options));
+}
+else {
+    String connectionString = ConfigurationReader.GetConnectionString("ConfigurationDatabase");
+    builder.Services.AddDbContext<ConfigurationContext>(builder => builder.UseSqlServer(connectionString));
+    builder.Services.AddSingleton<Func<String, ConfigurationContext>>(cont => connectionString => new ConfigurationContext(connectionString));
+}
 
 bool logRequests = ConfigurationReaderExtensions.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogRequests", true);
 bool logResponses = ConfigurationReaderExtensions.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogResponses", true);
@@ -118,7 +108,7 @@ async Task InitializeDatabase(IApplicationBuilder app)
 {
     using (IServiceScope serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
     {
-        var dbContextFactory = serviceScope.ServiceProvider.GetRequiredService<Shared.EntityFramework.IDbContextFactory<ConfigurationGenericContext>>();
+        var dbContextFactory = serviceScope.ServiceProvider.GetRequiredService<Shared.EntityFramework.IDbContextFactory<ConfigurationContext>>();
 
         var dbContext = await dbContextFactory.GetContext(Guid.NewGuid(), "ConfigurationDatabase", CancellationToken.None);
 

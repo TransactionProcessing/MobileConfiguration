@@ -1,4 +1,6 @@
-﻿namespace MobileConfiguration.Repository
+﻿using SimpleResults;
+
+namespace MobileConfiguration.Repository
 {
     using Database;
     using Database.Entities;
@@ -12,28 +14,24 @@
     public interface IConfigurationRepository
     {
         Task<MobileConfiguration> GetConfiguration(ConfigurationType configurationType, String id, CancellationToken cancellationToken);
-        Task CreateConfiguration(MobileConfiguration mobileConfiguration, CancellationToken cancellationToken);
+        Task<Result> CreateConfiguration(MobileConfiguration mobileConfiguration, CancellationToken cancellationToken);
 
         Task UpdateConfiguration(ConfigurationType configurationType,
                                  String id,
                                  MobileConfiguration mobileConfiguration, CancellationToken cancellationToken);
-
-        Task CreateAppCentreConfiguration(Models.ApplicationCentreConfiguration mobileConfiguration, CancellationToken cancellationToken);
-
-        Task<ApplicationCentreConfiguration> GetAppCentreConfiguration(String applicationId, CancellationToken cancellationToken);
     }
 
     public class ConfigurationRepository : IConfigurationRepository
     {
-        private readonly Shared.EntityFramework.IDbContextFactory<ConfigurationGenericContext> ContextFactory;
+        private readonly Shared.EntityFramework.IDbContextFactory<ConfigurationContext> ContextFactory;
 
-        public ConfigurationRepository(Shared.EntityFramework.IDbContextFactory<ConfigurationGenericContext> contextFactory) {
+        public ConfigurationRepository(Shared.EntityFramework.IDbContextFactory<ConfigurationContext> contextFactory) {
             this.ContextFactory = contextFactory;
         }
         public async Task<MobileConfiguration> GetConfiguration(ConfigurationType configurationType,
                                                                 String id,
                                                                 CancellationToken cancellationToken) {
-            ConfigurationGenericContext context = await this.ContextFactory.GetContext(Guid.NewGuid(), "ConfigurationDatabase",cancellationToken);
+            ConfigurationContext context = await this.ContextFactory.GetContext(Guid.NewGuid(), "ConfigurationDatabase",cancellationToken);
 
             Configuration? configuration = await context.Configurations.SingleOrDefaultAsync(c => c.Id == id && c.ConfigType == (Int32)configurationType, cancellationToken:cancellationToken);
 
@@ -67,30 +65,28 @@
             return configurationModel;
         }
 
-        public async Task CreateConfiguration(MobileConfiguration mobileConfiguration,
-                                              CancellationToken cancellationToken) {
-            ConfigurationGenericContext context = await this.ContextFactory.GetContext(Guid.NewGuid(), "ConfigurationDatabase", cancellationToken);
+        public async Task<Result> CreateConfiguration(MobileConfiguration mobileConfiguration,
+                                                      CancellationToken cancellationToken) {
+            ConfigurationContext context = await this.ContextFactory.GetContext(Guid.NewGuid(), "ConfigurationDatabase", cancellationToken);
 
-            Configuration configurationEntity = new Configuration {
-                                                                      Id = mobileConfiguration.Id,
-                                                                      ConfigType = (Int32)ConfigurationType.TransactionMobile,
-                                                                      ClientId = mobileConfiguration.ClientId,
-                                                                      ClientSecret = mobileConfiguration.ClientSecret,
-                                                                      DeviceIdentifier = mobileConfiguration.DeviceIdentifier,
-                                                                      EnableAutoUpdates = mobileConfiguration.EnableAutoUpdates,
-                                                                      LogLevelId = (Int32)mobileConfiguration.LogLevel,
-                                                                      HostAddresses = JsonConvert.SerializeObject(mobileConfiguration.HostAddresses)
-                                                                  };
+            Configuration configurationEntity = Factories.Factory.ToEntityConfiguration(mobileConfiguration);
 
             await context.Configurations.AddAsync(configurationEntity,cancellationToken);
-            await context.SaveChangesAsync(cancellationToken);
+
+            try {
+                await context.SaveChangesAsync(cancellationToken);
+                return Result.Success("Configuration created successfully.");
+            }
+            catch (Exception ex) {
+                return Result.Failure($"Failed to create configuration: {ex.Message}");
+            }
         }
 
         public async Task UpdateConfiguration(ConfigurationType configurationType,
                                               String id, 
                                               MobileConfiguration mobileConfiguration,
                                               CancellationToken cancellationToken) {
-            ConfigurationGenericContext context = await this.ContextFactory.GetContext(Guid.NewGuid(), "ConfigurationDatabase", cancellationToken);
+            ConfigurationContext context = await this.ContextFactory.GetContext(Guid.NewGuid(), "ConfigurationDatabase", cancellationToken);
 
             Configuration? configuration = await context.Configurations.SingleOrDefaultAsync(c => c.Id == id && c.ConfigType == (Int32)configurationType, cancellationToken: cancellationToken);
 
@@ -119,42 +115,6 @@
             }
 
             await context.SaveChangesAsync(cancellationToken);
-        }
-
-        public async Task CreateAppCentreConfiguration(Models.ApplicationCentreConfiguration configuration,
-                                                       CancellationToken cancellationToken) {
-            ConfigurationGenericContext context = await this.ContextFactory.GetContext(Guid.NewGuid(), "ConfigurationDatabase", cancellationToken);
-
-            ApplicationCentreConfiguration configurationEntity = new ApplicationCentreConfiguration {
-                                                                                                         AndroidKey = configuration.AndroidKey,
-                                                                                                         ApplicationId = configuration.ApplicationId,
-                                                                                                         IosKey = configuration.IosKey,
-                                                                                                         MacosKey = configuration.MacosKey,
-                                                                                                         WindowsKey = configuration.WindowsKey
-                                                                                                     };
-
-            await context.ApplicationCentreConfigurations.AddAsync(configurationEntity, cancellationToken);
-            await context.SaveChangesAsync(cancellationToken);
-        }
-
-        public async Task<ApplicationCentreConfiguration> GetAppCentreConfiguration(String applicationId,
-                                                                                    CancellationToken cancellationToken) {
-            ConfigurationGenericContext context = await this.ContextFactory.GetContext(Guid.NewGuid(), "ConfigurationDatabase", cancellationToken);
-
-            Database.Entities.ApplicationCentreConfiguration? configuration = await context.ApplicationCentreConfigurations.SingleOrDefaultAsync(c => c.ApplicationId == applicationId, cancellationToken: cancellationToken);
-
-            if (configuration == null)
-            {
-                throw new NotFoundException($"No app centre config for application Id [{applicationId}]");
-            }
-
-            return new ApplicationCentreConfiguration {
-                                                          AndroidKey = configuration.AndroidKey,
-                                                          ApplicationId = configuration.ApplicationId,
-                                                          IosKey = configuration.IosKey,
-                                                          MacosKey = configuration.MacosKey,
-                                                          WindowsKey = configuration.WindowsKey,
-                                                      };
         }
     }
 }
