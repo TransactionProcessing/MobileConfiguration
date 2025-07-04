@@ -29,33 +29,18 @@ public class ConfigurationReaderConnectionStringRepository : IConnectionStringCo
 
     public async Task<String> GetConnectionString(String externalIdentifier,
                                                   String connectionStringIdentifier,
-                                                  CancellationToken cancellationToken)
-    {
+                                                  CancellationToken cancellationToken) {
         String connectionString = string.Empty;
         String databaseName = string.Empty;
-
-        String databaseEngine = ConfigurationReader.GetValue("AppSettings", "DatabaseEngine");
 
         databaseName = $"{connectionStringIdentifier}{externalIdentifier}";
         connectionString = ConfigurationReader.GetConnectionString(connectionStringIdentifier);
 
         DbConnectionStringBuilder builder = null;
 
-        if (databaseEngine == "MySql")
-        {
-            builder = new MySqlConnectionStringBuilder(connectionString)
-                      {
-                          Database = databaseName
-                      };
-        }
-        else
-        {
-            // Default to SQL Server
-            builder = new SqlConnectionStringBuilder(connectionString)
-                      {
-                          InitialCatalog = databaseName
-                      };
-        }
+        // Default to SQL Server
+        builder = new SqlConnectionStringBuilder(connectionString) { InitialCatalog = databaseName };
+
 
         return builder.ToString();
     }

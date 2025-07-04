@@ -49,11 +49,11 @@ if (isInMemoryDatabase) {
     builder.Services.AddSingleton<Func<String, ConfigurationContext>>(cont => (connectionString) => new ConfigurationContext(contextBuilder.Options));
 }
 else {
+
     String connectionString = ConfigurationReader.GetConnectionString("ConfigurationDatabase");
     builder.Services.AddDbContext<ConfigurationContext>(builder => builder.UseSqlServer(connectionString));
-    builder.Services.AddSingleton<Func<String, ConfigurationContext>>(cont => connectionString => new ConfigurationContext(connectionString));
+    builder.Services.AddSingleton<Func<String, ConfigurationContext>>(cont => (connectionString) => { return new ConfigurationContext(connectionString); });
 }
-
 bool logRequests = ConfigurationReaderExtensions.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogRequests", true);
 bool logResponses = ConfigurationReaderExtensions.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogResponses", true);
 LogLevel middlewareLogLevel = ConfigurationReaderExtensions.GetValueOrDefault<LogLevel>("MiddlewareLogging", "MiddlewareLogLevel", LogLevel.Warning);
@@ -108,13 +108,11 @@ async Task InitializeDatabase(IApplicationBuilder app)
 {
     using (IServiceScope serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope())
     {
-        var dbContextFactory = serviceScope.ServiceProvider.GetRequiredService<Shared.EntityFramework.IDbContextFactory<ConfigurationContext>>();
-
-        var dbContext = await dbContextFactory.GetContext(Guid.NewGuid(), "ConfigurationDatabase", CancellationToken.None);
-
+        ConfigurationContext dbContext = serviceScope.ServiceProvider.GetRequiredService<ConfigurationContext>();
+        
         if (dbContext!= null && dbContext.Database.IsRelational())
         {
-            dbContext.Database.Migrate();
+            await dbContext.MigrateAsync(CancellationToken.None);
         }
     }
 }
