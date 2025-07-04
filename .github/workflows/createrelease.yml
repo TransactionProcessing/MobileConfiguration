@@ -59,7 +59,7 @@ jobs:
          zip -r ../mobileconfiguration.zip ./*
 
     - name: Upload the artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@4.4.0
       with:
         name: mobileconfiguration
         path: mobileconfiguration.zip
