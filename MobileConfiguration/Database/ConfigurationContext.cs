@@ -17,14 +17,20 @@ public class ConfigurationContext : DbContext
         this.ConnectionString = connectionString;
     }
 
-    public ConfigurationContext(DbContextOptions<ConfigurationContext> dbContextOptions) : base(dbContextOptions) {
+    public ConfigurationContext(DbContextOptions dbContextOptions) : base(dbContextOptions) {
     }
 
     #endregion
 
     public virtual async Task MigrateAsync(CancellationToken cancellationToken) {
         if (this.Database.IsSqlServer()) {
-            await this.Database.MigrateAsync(cancellationToken);
+            try {
+                await this.Database.MigrateAsync(cancellationToken);
+            }
+            catch (Exception ex) {
+                // Log the exception or handle it as needed
+                throw new InvalidOperationException("An error occurred while migrating the database.", ex);
+            }
         }
     }
 
