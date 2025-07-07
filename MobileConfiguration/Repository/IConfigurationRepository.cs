@@ -4,11 +4,13 @@ namespace MobileConfiguration.Repository
 {
     using Database;
     using Database.Entities;
+    using Microsoft.EntityFrameworkCore;
     using Models;
     using Newtonsoft.Json;
     using Shared.EntityFramework;
     using Shared.Exceptions;
-    using Microsoft.EntityFrameworkCore;
+    using Shared.General;
+    using Shared.Repositories;
     using ApplicationCentreConfiguration = Database.Entities.ApplicationCentreConfiguration;
 
     public interface IConfigurationRepository
@@ -23,24 +25,23 @@ namespace MobileConfiguration.Repository
 
     public class ConfigurationRepository : IConfigurationRepository
     {
-        private readonly Shared.EntityFramework.IDbContextFactory<ConfigurationContext> ContextFactory;
-
-        public ConfigurationRepository(Shared.EntityFramework.IDbContextFactory<ConfigurationContext> contextFactory) {
-            this.ContextFactory = contextFactory;
+        private readonly IDbContextResolver<ConfigurationContext> Resolver;
+        private static readonly String ConfigDatabaseName = "ConfigurationDatabase";
+        public ConfigurationRepository(IDbContextResolver<ConfigurationContext> resolver) {
+            this.Resolver = resolver;
         }
         public async Task<MobileConfiguration> GetConfiguration(ConfigurationType configurationType,
                                                                 String id,
                                                                 CancellationToken cancellationToken) {
-            ConfigurationContext context = await this.ContextFactory.GetContext(Guid.NewGuid(), "ConfigurationDatabase",cancellationToken);
-
-            Configuration? configuration = await context.Configurations.SingleOrDefaultAsync(c => c.Id == id && c.ConfigType == (Int32)configurationType, cancellationToken:cancellationToken);
+            using ResolvedDbContext<ConfigurationContext>? resolvedContext = this.Resolver.Resolve(ConfigDatabaseName);
+            Configuration? configuration = await resolvedContext.Context.Configurations.SingleOrDefaultAsync(c => c.Id == id && c.ConfigType == (Int32)configurationType, cancellationToken:cancellationToken);
 
             if (configuration == null) {
                 throw new NotFoundException($"No config of type [{configurationType}] found for Id [{id}]");
             }
 
             // TODO: create a factory
-            MobileConfiguration configurationModel = new MobileConfiguration {
+            MobileConfiguration configurationModel = new() {
                                                                                  ClientId = configuration.ClientId,
                                                                                  ClientSecret = configuration.ClientSecret,
                                                                                  ConfigurationType = (ConfigurationType)configuration.ConfigType,
@@ -67,14 +68,12 @@ namespace MobileConfiguration.Repository
 
         public async Task<Result> CreateConfiguration(MobileConfiguration mobileConfiguration,
                                                       CancellationToken cancellationToken) {
-            ConfigurationContext context = await this.ContextFactory.GetContext(Guid.NewGuid(), "ConfigurationDatabase", cancellationToken);
-
             Configuration configurationEntity = Factories.Factory.ToEntityConfiguration(mobileConfiguration);
-
-            await context.Configurations.AddAsync(configurationEntity,cancellationToken);
+            using ResolvedDbContext<ConfigurationContext>? resolvedContext = this.Resolver.Resolve(ConfigDatabaseName);
+            await resolvedContext.Context.Configurations.AddAsync(configurationEntity,cancellationToken);
 
             try {
-                await context.SaveChangesAsync(cancellationToken);
+                await resolvedContext.Context.SaveChangesAsync(cancellationToken);
                 return Result.Success("Configuration created successfully.");
             }
             catch (Exception ex) {
@@ -86,9 +85,8 @@ namespace MobileConfiguration.Repository
                                               String id, 
                                               MobileConfiguration mobileConfiguration,
                                               CancellationToken cancellationToken) {
-            ConfigurationContext context = await this.ContextFactory.GetContext(Guid.NewGuid(), "ConfigurationDatabase", cancellationToken);
-
-            Configuration? configuration = await context.Configurations.SingleOrDefaultAsync(c => c.Id == id && c.ConfigType == (Int32)configurationType, cancellationToken: cancellationToken);
+            using ResolvedDbContext<ConfigurationContext>? resolvedContext = this.Resolver.Resolve(ConfigDatabaseName);
+            Configuration? configuration = await resolvedContext.Context.Configurations.SingleOrDefaultAsync(c => c.Id == id && c.ConfigType == (Int32)configurationType, cancellationToken: cancellationToken);
 
             if (configuration == null)
             {
@@ -103,7 +101,7 @@ namespace MobileConfiguration.Repository
                                                       ConfigType = (Int32)mobileConfiguration.ConfigurationType,
                                                       Id = mobileConfiguration.Id,
                                                   };
-                await context.Configurations.AddAsync(configuration, cancellationToken);
+                await resolvedContext.Context.Configurations.AddAsync(configuration, cancellationToken);
             }
             else {
                 configuration.ClientSecret = mobileConfiguration.ClientSecret;
@@ -114,7 +112,7 @@ namespace MobileConfiguration.Repository
                 configuration.HostAddresses = JsonConvert.SerializeObject(mobileConfiguration.HostAddresses);
             }
 
-            await context.SaveChangesAsync(cancellationToken);
+            await resolvedContext.Context.SaveChangesAsync(cancellationToken);
         }
     }
 }

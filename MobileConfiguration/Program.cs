@@ -37,22 +37,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton<IConfigurationRepository, ConfigurationRepository>();
-builder.Services.AddSingleton<IConnectionStringConfigurationRepository, ConfigurationReaderConnectionStringRepository>();
-builder.Services.AddSingleton<Shared.EntityFramework.IDbContextFactory<ConfigurationContext>, DbContextFactory<ConfigurationContext>>();
-
+builder.Services.AddSingleton(typeof(IDbContextResolver<>), typeof(DbContextResolver<>));
 Boolean isInMemoryDatabase = Boolean.Parse(ConfigurationReader.GetValue("AppSettings", "InMemoryDatabase"));
 
 if (isInMemoryDatabase) {
     builder.Services.AddDbContext<ConfigurationContext>(builder => builder.UseInMemoryDatabase("ConfigurationDatabaseTest"));
-    DbContextOptionsBuilder<ConfigurationContext> contextBuilder = new DbContextOptionsBuilder<ConfigurationContext>();
-    contextBuilder = contextBuilder.UseInMemoryDatabase("ConfigurationDatabaseTest");
-    builder.Services.AddSingleton<Func<String, ConfigurationContext>>(cont => (connectionString) => new ConfigurationContext(contextBuilder.Options));
 }
 else {
-
-    String connectionString = ConfigurationReader.GetConnectionString("ConfigurationDatabase");
-    builder.Services.AddDbContext<ConfigurationContext>(builder => builder.UseSqlServer(connectionString));
-    builder.Services.AddSingleton<Func<String, ConfigurationContext>>(cont => (connectionString) => { return new ConfigurationContext(connectionString); });
+    builder.Services.AddDbContext<ConfigurationContext>(options =>
+        options.UseSqlServer(configuration.GetConnectionString("ConfigurationDatabase")));
 }
 bool logRequests = ConfigurationReaderExtensions.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogRequests", true);
 bool logResponses = ConfigurationReaderExtensions.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogResponses", true);
@@ -92,10 +85,11 @@ Logger.Initialise(logger);
 
 // Configure the HTTP request pipeline.
 app.UseAuthorization();
-
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.AddRequestLogging();
 app.AddResponseLogging();
 app.AddExceptionHandler();
+
 
 app.MapControllers();
 
@@ -117,23 +111,20 @@ async Task InitializeDatabase(IApplicationBuilder app)
     }
 }
 
-public static class ConfigurationReaderExtensions
-{
-    public static T GetValueOrDefault<T>(String sectionName, String keyName, T defaultValue)
-    {
-        try
-        {
+public static class ConfigurationReaderExtensions {
+    public static T GetValueOrDefault<T>(String sectionName,
+                                         String keyName,
+                                         T defaultValue) {
+        try {
             var value = ConfigurationReader.GetValue(sectionName, keyName);
 
-            if (String.IsNullOrEmpty(value))
-            {
+            if (String.IsNullOrEmpty(value)) {
                 return defaultValue;
             }
 
             return (T)Convert.ChangeType(value, typeof(T));
         }
-        catch (KeyNotFoundException kex)
-        {
+        catch (KeyNotFoundException kex) {
             return defaultValue;
         }
     }
