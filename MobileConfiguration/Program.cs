@@ -85,7 +85,7 @@ Logger.Initialise(logger);
 
 // Configure the HTTP request pipeline.
 app.UseAuthorization();
-app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseMiddleware<TenantMiddleware>();
 app.AddRequestLogging();
 app.AddResponseLogging();
 app.AddExceptionHandler();
