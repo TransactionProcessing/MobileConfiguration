@@ -13,6 +13,7 @@ using Shared.Logger;
 using Shared.Middleware;
 using Shared.Repositories;
 using System.Reflection;
+using Shared.Logger.TennantContext;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 IConfigurationRoot configuration = new ConfigurationBuilder()
@@ -32,10 +33,12 @@ builder.Configuration.SetBasePath(path)
        .AddEnvironmentVariables();
 // Add services to the container.
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddScoped<TenantContext>();
 builder.Services.AddSingleton<IConfigurationRepository, ConfigurationRepository>();
 builder.Services.AddSingleton(typeof(IDbContextResolver<>), typeof(DbContextResolver<>));
 Boolean isInMemoryDatabase = Boolean.Parse(ConfigurationReader.GetValue("AppSettings", "InMemoryDatabase"));
@@ -61,6 +64,8 @@ var app = builder.Build();
 
 String nlogConfigFilename = "nlog.config";
 
+app.UseMiddleware<TenantMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     var developmentNlogConfigFilename = "nlog.development.config";
@@ -85,7 +90,7 @@ Logger.Initialise(logger);
 
 // Configure the HTTP request pipeline.
 app.UseAuthorization();
-app.UseMiddleware<TenantMiddleware>();
+
 app.AddRequestLogging();
 app.AddResponseLogging();
 app.AddExceptionHandler();
