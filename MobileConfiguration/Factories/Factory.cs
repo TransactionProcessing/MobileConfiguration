@@ -1,61 +1,61 @@
-﻿using MobileConfiguration.DataTransferObjects;
+using MobileConfiguration.DataTransferObjects;
 using MobileConfiguration.Models;
 using Newtonsoft.Json;
 using HostAddress = MobileConfiguration.DataTransferObjects.HostAddress;
 using LoggingLevel = MobileConfiguration.DataTransferObjects.LoggingLevel;
 using ServiceType = MobileConfiguration.DataTransferObjects.ServiceType;
 
-namespace MobileConfiguration.Factories
+namespace MobileConfiguration.Factories;
+
+public static class Factory
 {
-    public static class Factory
-    {
-        public static Models.MobileConfiguration ToMobileConfiguration(Configuration configuration) {
-            Models.MobileConfiguration configurationModel = new()
-            {
-                ClientId = configuration.ClientId,
-                ClientSecret = configuration.ClientSecret,
-                ConfigurationType = ConfigurationType.TransactionMobile,
-                DeviceIdentifier = configuration.DeviceIdentifier,
-                EnableAutoUpdates = configuration.EnableAutoUpdates,
-                Id = configuration.Id,
-                HostAddresses = new List<Models.HostAddress>()
-            };
+    public static Models.MobileConfiguration ToMobileConfiguration(Configuration configuration) {
+        Models.MobileConfiguration configurationModel = new()
+        {
+            ClientId = configuration.ClientId,
+            ClientSecret = configuration.ClientSecret,
+            ConfigurationType = ConfigurationType.TransactionMobile,
+            DeviceIdentifier = configuration.DeviceIdentifier,
+            EnableAutoUpdates = configuration.EnableAutoUpdates,
+            Id = configuration.Id,
+            HostAddresses = new List<Models.HostAddress>()
+        };
 
-            foreach (HostAddress configurationHostAddress in configuration.HostAddresses)
+        foreach (HostAddress configurationHostAddress in configuration.HostAddresses)
+        {
+            Models.HostAddress hostAddressModel = new()
             {
-                Models.HostAddress hostAddressModel = new()
+                Uri = configurationHostAddress.Uri, ServiceType = configurationHostAddress.ServiceType switch
                 {
-                    Uri = configurationHostAddress.Uri, ServiceType = configurationHostAddress.ServiceType switch
-                    {
-                        ServiceType.EstateManagement => Models.ServiceType.EstateManagement,
-                        ServiceType.TransactionProcessorAcl => Models.ServiceType.TransactionProcessorAcl,
-                        ServiceType.VoucherManagementAcl => Models.ServiceType.VoucherManagementAcl,
-                        _ => Models.ServiceType.Security
-                    }
-                };
-
-                configurationModel.HostAddresses.Add(hostAddressModel);
-            }
-
-            configurationModel.LogLevel = configuration.LogLevel switch
-            {
-                LoggingLevel.Debug => Models.LoggingLevel.Debug,
-                LoggingLevel.Error => Models.LoggingLevel.Error,
-                LoggingLevel.Fatal => Models.LoggingLevel.Fatal,
-                LoggingLevel.Information => Models.LoggingLevel.Information,
-                LoggingLevel.Trace => Models.LoggingLevel.Trace,
-                LoggingLevel.Warning => Models.LoggingLevel.Warning,
-                _ => Models.LoggingLevel.Information
+                    ServiceType.EstateManagement => Models.ServiceType.EstateManagement,
+                    ServiceType.TransactionProcessorAcl => Models.ServiceType.TransactionProcessorAcl,
+                    ServiceType.VoucherManagementAcl => Models.ServiceType.VoucherManagementAcl,
+                    _ => Models.ServiceType.Security
+                }
             };
 
-            return configurationModel;
+            configurationModel.HostAddresses.Add(hostAddressModel);
         }
 
-        public static Database.Entities.Configuration ToEntityConfiguration(Models.MobileConfiguration configurationModel) {
-            Database.Entities.Configuration configurationEntity = new()
-            {
-                Id = configurationModel.Id,
-                ConfigType = (Int32)ConfigurationType.TransactionMobile,
+        configurationModel.LogLevel = configuration.LogLevel switch
+        {
+            LoggingLevel.Debug => Models.LoggingLevel.Debug,
+            LoggingLevel.Error => Models.LoggingLevel.Error,
+            LoggingLevel.Fatal => Models.LoggingLevel.Fatal,
+            LoggingLevel.Information => Models.LoggingLevel.Information,
+            LoggingLevel.Trace => Models.LoggingLevel.Trace,
+            LoggingLevel.Warning => Models.LoggingLevel.Warning,
+            _ => Models.LoggingLevel.Information
+        };
+
+        return configurationModel;
+    }
+
+    public static Database.Entities.Configuration ToEntityConfiguration(Models.MobileConfiguration configurationModel) {
+        Database.Entities.Configuration configurationEntity = new()
+        {
+            Id = configurationModel.Id,
+            ConfigType = (Int32)ConfigurationType.TransactionMobile,
                 ClientId = configurationModel.ClientId,
                 ClientSecret = configurationModel.ClientSecret,
                 DeviceIdentifier = configurationModel.DeviceIdentifier,
