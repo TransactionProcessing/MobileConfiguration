@@ -1,56 +1,56 @@
 ﻿using SimpleResults;
 
-namespace MobileConfiguration.Repository
+namespace MobileConfiguration.Repository;
+
+using Database;
+using Database.Entities;
+using Microsoft.EntityFrameworkCore;
+using Models;
+using Newtonsoft.Json;
+using Shared.EntityFramework;
+using Shared.Exceptions;
+using Shared.General;
+using Shared.Repositories;
+using ApplicationCentreConfiguration = Database.Entities.ApplicationCentreConfiguration;
+
+public interface IConfigurationRepository
 {
-    using Database;
-    using Database.Entities;
-    using Microsoft.EntityFrameworkCore;
-    using Models;
-    using Newtonsoft.Json;
-    using Shared.EntityFramework;
-    using Shared.Exceptions;
-    using Shared.General;
-    using Shared.Repositories;
-    using ApplicationCentreConfiguration = Database.Entities.ApplicationCentreConfiguration;
+    Task<MobileConfiguration> GetConfiguration(ConfigurationType configurationType, String id, CancellationToken cancellationToken);
+    Task<Result> CreateConfiguration(MobileConfiguration mobileConfiguration, CancellationToken cancellationToken);
 
-    public interface IConfigurationRepository
-    {
-        Task<MobileConfiguration> GetConfiguration(ConfigurationType configurationType, String id, CancellationToken cancellationToken);
-        Task<Result> CreateConfiguration(MobileConfiguration mobileConfiguration, CancellationToken cancellationToken);
+    Task UpdateConfiguration(ConfigurationType configurationType,
+                             String id,
+                             MobileConfiguration mobileConfiguration, CancellationToken cancellationToken);
+}
 
-        Task UpdateConfiguration(ConfigurationType configurationType,
-                                 String id,
-                                 MobileConfiguration mobileConfiguration, CancellationToken cancellationToken);
+public class ConfigurationRepository : IConfigurationRepository
+{
+    private readonly IDbContextResolver<ConfigurationContext> Resolver;
+    private static readonly String ConfigDatabaseName = "ConfigurationDatabase";
+    public ConfigurationRepository(IDbContextResolver<ConfigurationContext> resolver) {
+        this.Resolver = resolver;
     }
+    public async Task<MobileConfiguration> GetConfiguration(ConfigurationType configurationType,
+                                                            String id,
+                                                            CancellationToken cancellationToken) {
+        using ResolvedDbContext<ConfigurationContext>? resolvedContext = this.Resolver.Resolve(ConfigDatabaseName);
+        Configuration? configuration = await resolvedContext.Context.Configurations.SingleOrDefaultAsync(c => c.Id == id && c.ConfigType == (Int32)configurationType, cancellationToken:cancellationToken);
 
-    public class ConfigurationRepository : IConfigurationRepository
-    {
-        private readonly IDbContextResolver<ConfigurationContext> Resolver;
-        private static readonly String ConfigDatabaseName = "ConfigurationDatabase";
-        public ConfigurationRepository(IDbContextResolver<ConfigurationContext> resolver) {
-            this.Resolver = resolver;
+        if (configuration == null) {
+            throw new NotFoundException($"No config of type [{configurationType}] found for Id [{id}]");
         }
-        public async Task<MobileConfiguration> GetConfiguration(ConfigurationType configurationType,
-                                                                String id,
-                                                                CancellationToken cancellationToken) {
-            using ResolvedDbContext<ConfigurationContext>? resolvedContext = this.Resolver.Resolve(ConfigDatabaseName);
-            Configuration? configuration = await resolvedContext.Context.Configurations.SingleOrDefaultAsync(c => c.Id == id && c.ConfigType == (Int32)configurationType, cancellationToken:cancellationToken);
 
-            if (configuration == null) {
-                throw new NotFoundException($"No config of type [{configurationType}] found for Id [{id}]");
-            }
-
-            // TODO: create a factory
-            MobileConfiguration configurationModel = new() {
-                                                                                 ClientId = configuration.ClientId,
-                                                                                 ClientSecret = configuration.ClientSecret,
-                                                                                 ConfigurationType = (ConfigurationType)configuration.ConfigType,
-                                                                                 DeviceIdentifier = configuration.DeviceIdentifier,
-                                                                                 EnableAutoUpdates = configuration.EnableAutoUpdates,
-                                                                                 Id = configuration.Id,
-                                                                                 HostAddresses =
-                                                                                     JsonConvert.DeserializeObject<List<HostAddress>>(configuration.HostAddresses)
-                                                                             };
+        // TODO: create a factory
+        MobileConfiguration configurationModel = new() {
+            ClientId = configuration.ClientId,
+            ClientSecret = configuration.ClientSecret,
+            ConfigurationType = (ConfigurationType)configuration.ConfigType,
+            DeviceIdentifier = configuration.DeviceIdentifier,
+            EnableAutoUpdates = configuration.EnableAutoUpdates,
+            Id = configuration.Id,
+            HostAddresses =
+                JsonConvert.DeserializeObject<List<HostAddress>>(configuration.HostAddresses)
+        };
 
             configurationModel.LogLevel = configuration.LogLevelId switch
             {
