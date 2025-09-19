@@ -26,7 +26,7 @@ public interface IConfigurationRepository
 public class ConfigurationRepository : IConfigurationRepository
 {
     private readonly IDbContextResolver<ConfigurationContext> Resolver;
-    private static readonly String ConfigDatabaseName = "ConfigurationDatabase";
+    private const String ConfigDatabaseName = "ConfigurationDatabase";
     public ConfigurationRepository(IDbContextResolver<ConfigurationContext> resolver) {
         this.Resolver = resolver;
     }
