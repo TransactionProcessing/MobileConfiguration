@@ -69,27 +69,28 @@ public static class Factory {
             DeviceIdentifier = configurationModel.DeviceIdentifier,
             EnableAutoUpdates = configurationModel.EnableAutoUpdates,
             ClientId = configurationModel.ClientId,
+            LogLevel = configurationModel.LogLevel switch {
+                Models.LoggingLevel.Debug => LoggingLevel.Debug,
+                Models.LoggingLevel.Error => LoggingLevel.Error,
+                Models.LoggingLevel.Fatal => LoggingLevel.Fatal,
+                Models.LoggingLevel.Information => LoggingLevel.Information,
+                Models.LoggingLevel.Trace => LoggingLevel.Trace,
+                Models.LoggingLevel.Warning => LoggingLevel.Warning,
+                _ => LoggingLevel.Information
+            }
         };
 
         foreach (Models.HostAddress configurationHostAddress in configurationModel.HostAddresses) {
-            HostAddress hostAddress = new HostAddress { Uri = configurationHostAddress.Uri, };
-            hostAddress.ServiceType = configurationHostAddress.ServiceType switch {
-                Models.ServiceType.TransactionProcessorAcl => ServiceType.TransactionProcessorAcl,
-                _ => ServiceType.Security
+            HostAddress hostAddress = new HostAddress {
+                Uri = configurationHostAddress.Uri,
+                ServiceType = configurationHostAddress.ServiceType switch {
+                    Models.ServiceType.TransactionProcessorAcl => ServiceType.TransactionProcessorAcl,
+                    _ => ServiceType.Security
+                }
             };
 
             response.HostAddresses.Add(hostAddress);
         }
-
-        response.LogLevel = configurationModel.LogLevel switch {
-            Models.LoggingLevel.Debug => LoggingLevel.Debug,
-            Models.LoggingLevel.Error => LoggingLevel.Error,
-            Models.LoggingLevel.Fatal => LoggingLevel.Fatal,
-            Models.LoggingLevel.Information => LoggingLevel.Information,
-            Models.LoggingLevel.Trace => LoggingLevel.Trace,
-            Models.LoggingLevel.Warning => LoggingLevel.Warning,
-            _ => LoggingLevel.Information
-        };
 
         return response;
     }
