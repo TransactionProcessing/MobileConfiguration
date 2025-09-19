@@ -53,12 +53,10 @@ public enum ConfigurationType
     
 }
 
-    public class ApplicationCentreConfiguration
-    {
-        public String ApplicationId { get; set; }
-        public String AndroidKey { get; set; }
-        public String IosKey { get; set; }
-        public String MacosKey { get; set; }
-        public String WindowsKey { get; set; }
-    }
+public class ApplicationCentreConfiguration {
+    public String ApplicationId { get; set; }
+    public String AndroidKey { get; set; }
+    public String IosKey { get; set; }
+    public String MacosKey { get; set; }
+    public String WindowsKey { get; set; }
 }

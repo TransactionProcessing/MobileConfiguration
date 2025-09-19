@@ -10,69 +10,46 @@ using MobileConfiguration.Database;
 namespace MobileConfiguration.Database.Migrations.SqlServer;
 
 [DbContext(typeof(ConfigurationContext))]
-partial class ConfigurationSqlServerContextModelSnapshot : ModelSnapshot
-{
-    protected override void BuildModel(ModelBuilder modelBuilder)
-    {
+partial class ConfigurationSqlServerContextModelSnapshot : ModelSnapshot {
+    protected override void BuildModel(ModelBuilder modelBuilder) {
 #pragma warning disable 612, 618
-        modelBuilder
-            .HasAnnotation("ProductVersion", "9.0.5")
-            .HasAnnotation("Relational:MaxIdentifierLength", 128);
+        modelBuilder.HasAnnotation("ProductVersion", "9.0.5").HasAnnotation("Relational:MaxIdentifierLength", 128);
 
         SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-        modelBuilder.Entity("MobileConfiguration.Database.Entities.Configuration", b =>
-            {
-                b.Property<string>("Id")
-                    .HasColumnType("nvarchar(450)");
+        modelBuilder.Entity("MobileConfiguration.Database.Entities.Configuration", b => {
+            b.Property<string>("Id").HasColumnType("nvarchar(450)");
 
-                b.Property<int>("ConfigType")
-                    .HasColumnType("int");
+            b.Property<int>("ConfigType").HasColumnType("int");
 
-                b.Property<string>("ClientId")
-                    .IsRequired()
-                    .HasColumnType("nvarchar(max)");
+            b.Property<string>("ClientId").IsRequired().HasColumnType("nvarchar(max)");
 
-                b.Property<string>("ClientSecret")
-                    .IsRequired()
-                    .HasColumnType("nvarchar(max)");
+            b.Property<string>("ClientSecret").IsRequired().HasColumnType("nvarchar(max)");
 
-                b.Property<string>("DeviceIdentifier")
-                    .IsRequired()
-                    .HasColumnType("nvarchar(max)");
+            b.Property<string>("DeviceIdentifier").IsRequired().HasColumnType("nvarchar(max)");
 
-                b.Property<bool>("EnableAutoUpdates")
-                    .HasColumnType("bit");
+            b.Property<bool>("EnableAutoUpdates").HasColumnType("bit");
 
-                b.Property<string>("HostAddresses")
-                    .IsRequired()
-                    .HasColumnType("nvarchar(max)");
+            b.Property<string>("HostAddresses").IsRequired().HasColumnType("nvarchar(max)");
 
-                b.Property<int>("LogLevelId")
-                    .HasColumnType("int");
+            b.Property<int>("LogLevelId").HasColumnType("int");
 
-                b.HasKey("Id", "ConfigType");
+            b.HasKey("Id", "ConfigType");
 
-                b.ToTable("Configurations");
-            });
+            b.ToTable("Configurations");
+        });
 
-        modelBuilder.Entity("MobileConfiguration.Database.Entities.LoggingLevels", b =>
-            {
-                    b.Property<int>("LogLevelId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+        modelBuilder.Entity("MobileConfiguration.Database.Entities.LoggingLevels", b => {
+            b.Property<int>("LogLevelId").ValueGeneratedOnAdd().HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LogLevelId"));
+            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("LogLevelId"));
 
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+            b.Property<string>("Description").IsRequired().HasColumnType("nvarchar(max)");
 
-                    b.HasKey("LogLevelId");
+            b.HasKey("LogLevelId");
 
-                    b.ToTable("LoggingLevels");
-                });
+            b.ToTable("LoggingLevels");
+        });
 #pragma warning restore 612, 618
-        }
     }
 }
