@@ -40,7 +40,6 @@ namespace MobileConfiguration.Repository
                 throw new NotFoundException($"No config of type [{configurationType}] found for Id [{id}]");
             }
 
-            // TODO: create a factory
             MobileConfiguration configurationModel = new() {
                                                                                  ClientId = configuration.ClientId,
                                                                                  ClientSecret = configuration.ClientSecret,

@@ -19,9 +19,6 @@ public static class Extensions
                                                                  r.Id,
                                                                  r.ConfigType
                                                              });
-
-        // TODO: FK on LogLevel
-
         return modelBuilder;
     }
 
