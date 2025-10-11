@@ -16,7 +16,6 @@ public class TransactionMobileLoggingController : ControllerBase
 
         Logger.LogInformation(JsonConvert.SerializeObject(logMessages));
 
-        // TODO: return "correct" response...
         return this.Ok();
     }
 }
