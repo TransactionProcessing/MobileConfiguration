@@ -9,9 +9,6 @@ namespace MobileConfiguration.Repository
     using Newtonsoft.Json;
     using Shared.EntityFramework;
     using Shared.Exceptions;
-    using Shared.General;
-    using Shared.Repositories;
-    using ApplicationCentreConfiguration = Database.Entities.ApplicationCentreConfiguration;
 
     public interface IConfigurationRepository
     {

@@ -5,16 +5,18 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MobileConfiguration.Database;
 using MobileConfiguration.Repository;
+using NLog;
 using NLog.Extensions.Logging;
 using Shared.EntityFramework;
 using Shared.Extensions;
 using Shared.General;
 using Shared.Logger;
-using Shared.Middleware;
-using Shared.Repositories;
-using System.Reflection;
 using Shared.Logger.TennantContext;
+using Shared.Middleware;
+using System.Reflection;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
+using Logger = NLog.Logger;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 IConfigurationRoot configuration = new ConfigurationBuilder()
                                    .AddJsonFile("appsettings.json")
@@ -52,40 +54,37 @@ else {
 }
 bool logRequests = ConfigurationReaderExtensions.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogRequests", true);
 bool logResponses = ConfigurationReaderExtensions.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogResponses", true);
-LogLevel middlewareLogLevel = ConfigurationReaderExtensions.GetValueOrDefault<LogLevel>("MiddlewareLogging", "MiddlewareLogLevel", LogLevel.Warning);
+LogLevel middlewareLogLevel = ConfigurationReaderExtensions.GetValueOrDefault("MiddlewareLogging", "MiddlewareLogLevel", LogLevel.Warning);
 
-RequestResponseMiddlewareLoggingConfig config =
-    new RequestResponseMiddlewareLoggingConfig(middlewareLogLevel, logRequests, logResponses);
+RequestResponseMiddlewareLoggingConfig config = new(middlewareLogLevel, logRequests, logResponses);
 
 builder.Services.AddSingleton(config);
 
 
 var app = builder.Build();
+String contentRoot = Directory.GetCurrentDirectory();
 
-String nlogConfigFilename = "nlog.config";
+String nlogConfigPath = Path.Combine(contentRoot, "nlog.config");
 
 app.UseMiddleware<TenantMiddleware>();
 
-if (app.Environment.IsDevelopment())
+app.UseSwagger();
+app.UseSwaggerUI();
+
+LogManager.Setup(b =>
 {
-    var developmentNlogConfigFilename = "nlog.development.config";
-    if (File.Exists(Path.Combine(app.Environment.ContentRootPath, developmentNlogConfigFilename)))
+    b.SetupLogFactory(setup =>
     {
-        nlogConfigFilename = developmentNlogConfigFilename;
-    }
+        setup.AddCallSiteHiddenAssembly(typeof(NlogLogger).Assembly);
+        setup.AddCallSiteHiddenAssembly(typeof(Shared.Logger.Logger).Assembly);
+        setup.AddCallSiteHiddenAssembly(typeof(TenantMiddleware).Assembly);
+    });
+    b.LoadConfigurationFromFile(nlogConfigPath);
+});
 
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+Logger logger = LogManager.LogFactory.GetLogger("MobileConfiguration");
 
-var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
-
-loggerFactory.ConfigureNLog(Path.Combine(path, nlogConfigFilename));
-loggerFactory.AddNLog();
-
-ILogger logger = loggerFactory.CreateLogger("MobileConfiguration");
-
-Logger.Initialise(logger);
+Shared.Logger.Logger.Initialise(logger as ILogger);
 
 
 // Configure the HTTP request pipeline.
