@@ -5,7 +5,7 @@ on:
     types: [published]
 
 jobs:
-  buildlinux:
+  build:
     name: "Release"
     env:
         ASPNETCORE_ENVIRONMENT: "Production"
