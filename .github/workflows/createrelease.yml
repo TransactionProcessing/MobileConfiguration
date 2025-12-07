@@ -54,7 +54,7 @@ jobs:
          zip -r ../mobileconfiguration.zip ./*
 
     - name: Upload the artifact
-      uses: actions/upload-artifact@4.4.0
+      uses: actions/upload-artifact@5.0.0
       with:
         name: mobileconfiguration
         path: mobileconfiguration.zip
