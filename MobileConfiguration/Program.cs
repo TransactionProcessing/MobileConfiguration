@@ -22,10 +22,10 @@ using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 IConfigurationRoot configuration = new ConfigurationBuilder()
-    .AddJsonFile("/home/txnproc/config/appsettings.json", true, true)
-    .AddJsonFile($"/home/txnproc/config/appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("/home/txnproc/config/appsettings.json", true, true)
+    .AddJsonFile($"/home/txnproc/config/appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
     .AddEnvironmentVariables().Build();
 
 ConfigurationReader.Initialise(configuration);
