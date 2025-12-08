@@ -14,19 +14,24 @@ using Shared.Logger;
 using Shared.Logger.TennantContext;
 using Shared.Middleware;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 using Logger = NLog.Logger;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
 IConfigurationRoot configuration = new ConfigurationBuilder()
-                                   .AddJsonFile("appsettings.json")
-                                   .AddEnvironmentVariables()
-                                   .Build();
+    .AddJsonFile("/home/txnproc/config/appsettings.json", true, true)
+    .AddJsonFile($"/home/txnproc/config/appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables().Build();
 
 ConfigurationReader.Initialise(configuration);
 
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Host.UseWindowsService();
+
 String path = Assembly.GetExecutingAssembly().Location;
 path = Path.GetDirectoryName(path);
 builder.Configuration.SetBasePath(path)
