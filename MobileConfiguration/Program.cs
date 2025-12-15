@@ -30,6 +30,30 @@ IConfigurationRoot configuration = new ConfigurationBuilder()
 
 ConfigurationReader.Initialise(configuration);
 
+String contentRoot = Directory.GetCurrentDirectory();
+
+String nlogConfigPath = Path.Combine(contentRoot, "nlog.config");
+
+LogManager.Setup(b =>
+{
+    b.SetupLogFactory(setup =>
+    {
+        setup.AddCallSiteHiddenAssembly(typeof(NlogLogger).Assembly);
+        setup.AddCallSiteHiddenAssembly(typeof(Shared.Logger.Logger).Assembly);
+        setup.AddCallSiteHiddenAssembly(typeof(TenantMiddleware).Assembly);
+    });
+    b.LoadConfigurationFromFile(nlogConfigPath);
+});
+
+ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
+{
+    builder.ClearProviders();
+    builder.AddNLog(); // bridges Microsoft ILogger to NLog
+});
+ILogger logger = loggerFactory.CreateLogger("MobileConfiguration");
+Shared.Logger.Logger.Initialise(logger);
+
+
 builder.Host.UseWindowsService();
 
 String path = Assembly.GetExecutingAssembly().Location;
@@ -67,29 +91,13 @@ builder.Services.AddSingleton(config);
 
 
 var app = builder.Build();
-String contentRoot = Directory.GetCurrentDirectory();
-
-String nlogConfigPath = Path.Combine(contentRoot, "nlog.config");
 
 app.UseMiddleware<TenantMiddleware>();
 
 app.UseSwagger();
 app.UseSwaggerUI();
 
-LogManager.Setup(b =>
-{
-    b.SetupLogFactory(setup =>
-    {
-        setup.AddCallSiteHiddenAssembly(typeof(NlogLogger).Assembly);
-        setup.AddCallSiteHiddenAssembly(typeof(Shared.Logger.Logger).Assembly);
-        setup.AddCallSiteHiddenAssembly(typeof(TenantMiddleware).Assembly);
-    });
-    b.LoadConfigurationFromFile(nlogConfigPath);
-});
 
-Logger logger = LogManager.LogFactory.GetLogger("MobileConfiguration");
-
-Shared.Logger.Logger.Initialise(logger as ILogger);
 
 
 // Configure the HTTP request pipeline.
