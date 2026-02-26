@@ -1,6 +1,4 @@
-﻿using MobileConfiguration.Controllers;
-
-namespace MobileConfiguration.Models
+﻿namespace MobileConfiguration.Models
 {
     public class MobileConfiguration
     {

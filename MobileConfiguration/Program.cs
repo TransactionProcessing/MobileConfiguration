@@ -65,7 +65,8 @@ builder.Configuration.SetBasePath(path)
 // Add services to the container.
 
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddControllers();
+builder.Services.AddAuthorization();
+// Use minimal APIs and handler pattern instead of MVC controllers
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -108,7 +109,12 @@ app.AddResponseLogging();
 app.AddExceptionHandler();
 
 
-app.MapControllers();
+// Minimal API endpoints (handler pattern)
+app.MapPost("/api/TransactionMobileConfiguration", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.PostConfiguration);
+app.MapGet("/api/TransactionMobileConfiguration/{id}", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.GetConfiguration);
+app.MapPut("/api/TransactionMobileConfiguration/{id}", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.PutConfiguration);
+
+app.MapPost("/api/TransactionMobileLogging", MobileConfiguration.Handlers.TransactionMobileLoggingHandler.PostLogging);
 
 InitializeDatabase(app).Wait(CancellationToken.None);
 
