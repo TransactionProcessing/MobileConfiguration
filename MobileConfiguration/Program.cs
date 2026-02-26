@@ -82,9 +82,9 @@ else {
     builder.Services.AddDbContext<ConfigurationContext>(options =>
         options.UseSqlServer(configuration.GetConnectionString("ConfigurationDatabase")));
 }
-bool logRequests = ConfigurationReaderExtensions.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogRequests", true);
-bool logResponses = ConfigurationReaderExtensions.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogResponses", true);
-LogLevel middlewareLogLevel = ConfigurationReaderExtensions.GetValueOrDefault("MiddlewareLogging", "MiddlewareLogLevel", LogLevel.Warning);
+bool logRequests = ConfigurationReader.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogRequests", true);
+bool logResponses = ConfigurationReader.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogResponses", true);
+LogLevel middlewareLogLevel = ConfigurationReader.GetValueOrDefault("MiddlewareLogging", "MiddlewareLogLevel", LogLevel.Warning);
 
 RequestResponseMiddlewareLoggingConfig config = new(middlewareLogLevel, logRequests, logResponses);
 
@@ -130,25 +130,6 @@ async Task InitializeDatabase(IApplicationBuilder app)
         if (dbContext!= null && dbContext.Database.IsRelational())
         {
             await dbContext.MigrateAsync(CancellationToken.None);
-        }
-    }
-}
-
-public static class ConfigurationReaderExtensions {
-    public static T GetValueOrDefault<T>(String sectionName,
-                                         String keyName,
-                                         T defaultValue) {
-        try {
-            var value = ConfigurationReader.GetValue(sectionName, keyName);
-
-            if (String.IsNullOrEmpty(value)) {
-                return defaultValue;
-            }
-
-            return (T)Convert.ChangeType(value, typeof(T));
-        }
-        catch (KeyNotFoundException kex) {
-            return defaultValue;
         }
     }
 }
