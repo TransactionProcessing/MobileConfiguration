@@ -7,6 +7,7 @@ using MobileConfiguration.Database;
 using MobileConfiguration.Repository;
 using NLog;
 using NLog.Extensions.Logging;
+using Sentry.Extensibility;
 using Shared.EntityFramework;
 using Shared.Extensions;
 using Shared.General;
@@ -29,6 +30,25 @@ IConfigurationRoot configuration = new ConfigurationBuilder()
     .AddEnvironmentVariables().Build();
 
 ConfigurationReader.Initialise(configuration);
+
+// Configure Sentry on the webBuilder using the config snapshot.
+var sentrySection = ConfigurationReader.GetValueOrDefault("SentryConfiguration", "Dsn", "N/A");
+if (sentrySection != "N/A")
+{
+    // Replace the condition below if you intended to only enable Sentry in certain environments.
+    if (builder.Environment.IsDevelopment() == false)
+    {
+        builder.WebHost.UseSentry(o =>
+        {
+            o.Dsn = sentrySection;
+            o.SendDefaultPii = true;
+            o.MaxRequestBodySize = RequestSize.Always;
+            o.CaptureBlockingCalls = true;
+            o.Release = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown";
+        });
+    }
+}
+
 
 String contentRoot = Directory.GetCurrentDirectory();
 
