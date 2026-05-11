@@ -6,9 +6,9 @@ namespace MobileConfiguration.Repository
     using Database.Entities;
     using Microsoft.EntityFrameworkCore;
     using Models;
-    using Newtonsoft.Json;
     using Shared.EntityFramework;
     using Shared.Exceptions;
+    using Shared.Serialisation;
 
     public interface IConfigurationRepository
     {
@@ -45,7 +45,7 @@ namespace MobileConfiguration.Repository
                                                                                  EnableAutoUpdates = configuration.EnableAutoUpdates,
                                                                                  Id = configuration.Id,
                                                                                  HostAddresses =
-                                                                                     JsonConvert.DeserializeObject<List<HostAddress>>(configuration.HostAddresses)
+                                                                                     StringSerialiser.Deserialise<List<HostAddress>>(configuration.HostAddresses)
                                                                              };
 
             configurationModel.LogLevel = configuration.LogLevelId switch
@@ -93,7 +93,7 @@ namespace MobileConfiguration.Repository
                                                       LogLevelId = (Int32)mobileConfiguration.LogLevel,
                                                       ClientId = mobileConfiguration.ClientId,
                                                       EnableAutoUpdates = mobileConfiguration.EnableAutoUpdates,
-                                                      HostAddresses = JsonConvert.SerializeObject(mobileConfiguration.HostAddresses),
+                                                      HostAddresses = StringSerialiser.Serialise(mobileConfiguration.HostAddresses),
                                                       ConfigType = (Int32)mobileConfiguration.ConfigurationType,
                                                       Id = mobileConfiguration.Id,
                                                   };
@@ -105,7 +105,7 @@ namespace MobileConfiguration.Repository
                 configuration.LogLevelId = (Int32)mobileConfiguration.LogLevel;
                 configuration.ClientId = mobileConfiguration.ClientId;
                 configuration.EnableAutoUpdates = mobileConfiguration.EnableAutoUpdates;
-                configuration.HostAddresses = JsonConvert.SerializeObject(mobileConfiguration.HostAddresses);
+                configuration.HostAddresses = StringSerialiser.Serialise(mobileConfiguration.HostAddresses);
             }
 
             await resolvedContext.Context.SaveChangesAsync(cancellationToken);
