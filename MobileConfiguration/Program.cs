@@ -1,8 +1,4 @@
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using MobileConfiguration.Database;
 using MobileConfiguration.Repository;
 using NLog;
@@ -14,10 +10,11 @@ using Shared.General;
 using Shared.Logger;
 using Shared.Logger.TennantContext;
 using Shared.Middleware;
+using Shared.Serialisation;
+using System.ComponentModel;
 using System.Reflection;
-using System.Runtime.CompilerServices;
+using System.Text.Json;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
-using Logger = NLog.Logger;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
@@ -111,8 +108,17 @@ RequestResponseMiddlewareLoggingConfig config = new(middlewareLogLevel, logReque
 
 builder.Services.AddSingleton(config);
 
-
+builder.Services.AddSingleton<IStringSerialiser, SystemTextJsonSerializer>();
+builder.Services.AddSingleton<Func<Object, String>>(_ => obj => StringSerialiser.Serialise(obj));
+builder.Services.AddSingleton<Func<String, Type, Object>>(_ => (str, type) => StringSerialiser.DeserializeObject<Object>(str, type));
+builder.Services.AddSingleton(SystemTextJsonSerializer.GetDefaultJsonSerializerOptions());
+builder.Services.ConfigureHttpJsonOptions(options => {
+    JsonSerializerConfiguration.ConfigureMinimalApi(options.SerializerOptions);
+});
 var app = builder.Build();
+
+var serialiser = app.Services.GetRequiredService<IStringSerialiser>();
+StringSerialiser.Initialise(serialiser);
 
 app.UseMiddleware<TenantMiddleware>();
 
@@ -120,13 +126,10 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 
-
-
 // Configure the HTTP request pipeline.
 app.UseAuthorization();
 
-app.AddRequestLogging();
-app.AddResponseLogging();
+app.AddRequestResponseLogging();
 app.AddExceptionHandler();
 
 
@@ -152,5 +155,19 @@ async Task InitializeDatabase(IApplicationBuilder app)
         {
             await dbContext.MigrateAsync(CancellationToken.None);
         }
+    }
+}
+
+
+public static class JsonSerializerConfiguration
+{
+    public static void ConfigureMinimalApi(JsonSerializerOptions serializerOptions)
+    {
+        var defaultOptions = SystemTextJsonSerializer.GetDefaultJsonSerializerOptions();
+        serializerOptions.PropertyNamingPolicy = defaultOptions.PropertyNamingPolicy;
+        serializerOptions.DictionaryKeyPolicy = defaultOptions.DictionaryKeyPolicy;
+        serializerOptions.ReferenceHandler = defaultOptions.ReferenceHandler;
+        serializerOptions.WriteIndented = defaultOptions.WriteIndented;
+        serializerOptions.Converters.Add(new DateTimeSpaceConverter());
     }
 }

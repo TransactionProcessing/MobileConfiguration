@@ -1,6 +1,6 @@
 ﻿using MobileConfiguration.DataTransferObjects;
 using MobileConfiguration.Models;
-using Newtonsoft.Json;
+using Shared.Serialisation;
 using HostAddress = MobileConfiguration.DataTransferObjects.HostAddress;
 using LoggingLevel = MobileConfiguration.DataTransferObjects.LoggingLevel;
 using ServiceType = MobileConfiguration.DataTransferObjects.ServiceType;
@@ -61,7 +61,7 @@ namespace MobileConfiguration.Factories
                 DeviceIdentifier = configurationModel.DeviceIdentifier,
                 EnableAutoUpdates = configurationModel.EnableAutoUpdates,
                 LogLevelId = (Int32)configurationModel.LogLevel,
-                HostAddresses = JsonConvert.SerializeObject(configurationModel.HostAddresses)
+                HostAddresses = StringSerialiser.Serialise(configurationModel.HostAddresses)
             };
 
             return configurationEntity;
