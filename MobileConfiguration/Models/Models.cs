@@ -20,7 +20,7 @@
 
     public class HostAddress
     {
-        public ServiceType ServiceType { get; set; }
+        public Int32 ServiceType { get; set; }
 
         public String Uri { get; set; }
     }

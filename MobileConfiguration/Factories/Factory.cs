@@ -25,12 +25,13 @@ namespace MobileConfiguration.Factories
             {
                 Models.HostAddress hostAddressModel = new()
                 {
-                    Uri = configurationHostAddress.Uri, ServiceType = configurationHostAddress.ServiceType switch
+                    Uri = configurationHostAddress.Uri,
+                    ServiceType = configurationHostAddress.ServiceType switch
                     {
-                        ServiceType.EstateManagement => Models.ServiceType.EstateManagement,
-                        ServiceType.TransactionProcessorAcl => Models.ServiceType.TransactionProcessorAcl,
-                        ServiceType.VoucherManagementAcl => Models.ServiceType.VoucherManagementAcl,
-                        _ => Models.ServiceType.Security
+                        ServiceType.EstateManagement => (Int32)Models.ServiceType.EstateManagement,
+                        ServiceType.TransactionProcessorAcl => (Int32)Models.ServiceType.TransactionProcessorAcl,
+                        ServiceType.VoucherManagementAcl => (Int32)Models.ServiceType.VoucherManagementAcl,
+                        _ => (Int32)Models.ServiceType.Security
                     }
                 };
 
@@ -84,7 +85,7 @@ namespace MobileConfiguration.Factories
                 {
                     Uri = configurationHostAddress.Uri,
                 };
-                hostAddress.ServiceType = configurationHostAddress.ServiceType switch
+                hostAddress.ServiceType = (Models.ServiceType)configurationHostAddress.ServiceType switch
                 {
                     Models.ServiceType.TransactionProcessorAcl => ServiceType.TransactionProcessorAcl,
                     _ => ServiceType.Security
