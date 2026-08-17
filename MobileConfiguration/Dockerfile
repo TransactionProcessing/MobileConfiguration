@@ -3,7 +3,7 @@ WORKDIR /app
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY ["MobileConfiguration/NuGet.Config", "MobileConfiguration/"]
+COPY ["NuGet.Config", "MobileConfiguration/"]
 COPY ["MobileConfiguration/MobileConfiguration.csproj", "MobileConfiguration/"]
 COPY ["Directory.Packages.props", "."]
 COPY . .

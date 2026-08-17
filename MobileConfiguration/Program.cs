@@ -97,8 +97,30 @@ if (isInMemoryDatabase) {
     builder.Services.AddDbContext<ConfigurationContext>(builder => builder.UseInMemoryDatabase("ConfigurationDatabaseTest"));
 }
 else {
-    builder.Services.AddDbContext<ConfigurationContext>(options =>
-        options.UseSqlServer(configuration.GetConnectionString("ConfigurationDatabase")));
+    SqlServerRetryOptions retryOptions;
+    try
+    {
+        retryOptions = ConfigurationReader.GetSection<SqlServerRetryOptions>("AppSettings:SqlServerRetry");
+    }
+    catch (KeyNotFoundException)
+    {
+        retryOptions = null;
+    }
+
+    if (retryOptions != null)
+    {
+        builder.Services.AddDbContext<ConfigurationContext>(options => options.UseSharedSqlServer<ConfigurationContext>(ConfigurationReader.GetConnectionString("ConfigurationDatabase"), retry => {
+            retry.AdditionalTransientErrorNumbers = retryOptions.AdditionalTransientErrorNumbers;
+            retry.MaxRetryCount = retryOptions.MaxRetryCount;
+            retry.MaxRetryDelay = retryOptions.MaxRetryDelay;
+        }));
+    }
+    else
+    {
+        builder.Services.AddDbContext<ConfigurationContext>(options => options.UseSqlServer(ConfigurationReader.GetConnectionString("ConfigurationDatabase"), retry => {
+            retry.EnableRetryOnFailure();
+        }));
+    }
 }
 bool logRequests = ConfigurationReader.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogRequests", true);
 bool logResponses = ConfigurationReader.GetValueOrDefault<Boolean>("MiddlewareLogging", "LogResponses", true);
