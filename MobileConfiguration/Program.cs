@@ -24,6 +24,7 @@ IConfigurationRoot configuration = new ConfigurationBuilder()
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddJsonFile("/home/txnproc/config/appsettings.json", true, true)
     .AddJsonFile($"/home/txnproc/config/appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+    .AddJsonFile($"/home/txnproc/config/appsettings.local.json", optional: true)
     .AddEnvironmentVariables().Build();
 
 ConfigurationReader.Initialise(configuration);
@@ -78,7 +79,7 @@ String path = Assembly.GetExecutingAssembly().Location;
 path = Path.GetDirectoryName(path);
 builder.Configuration.SetBasePath(path)
        .AddJsonFile("hosting.json", optional: true)
-       .AddJsonFile("hosting.development.json", optional: true)
+       .AddJsonFile($"hosting.{builder.Environment.EnvironmentName}.json", optional: true)
        .AddEnvironmentVariables();
 // Add services to the container.
 

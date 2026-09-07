@@ -38,6 +38,9 @@
     <Content Update="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Update="hosting.development.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Update="hosting.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
