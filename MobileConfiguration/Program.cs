@@ -14,6 +14,7 @@ using Shared.Serialisation;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text.Json;
+using Shared.Monitoring;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -138,6 +139,8 @@ builder.Services.AddSingleton(SystemTextJsonSerializer.GetDefaultJsonSerializerO
 builder.Services.ConfigureHttpJsonOptions(options => {
     JsonSerializerConfiguration.ConfigureMinimalApi(options.SerializerOptions);
 });
+builder.Services.AddUptimeKuma();
+
 var app = builder.Build();
 
 var serialiser = app.Services.GetRequiredService<IStringSerialiser>();
@@ -164,6 +167,13 @@ app.MapPut("/api/TransactionMobileConfiguration/{id}", MobileConfiguration.Handl
 app.MapPost("/api/TransactionMobileLogging", MobileConfiguration.Handlers.TransactionMobileLoggingHandler.PostLogging);
 
 InitializeDatabase(app).Wait(CancellationToken.None);
+
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    app.RegisterWithUptimeKumaAsync()
+        .GetAwaiter()
+        .GetResult();
+});
 
 app.Run();
 
