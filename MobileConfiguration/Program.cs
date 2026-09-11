@@ -14,6 +14,8 @@ using Shared.Serialisation;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text.Json;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Shared.Monitoring;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -139,6 +141,7 @@ builder.Services.AddSingleton(SystemTextJsonSerializer.GetDefaultJsonSerializerO
 builder.Services.ConfigureHttpJsonOptions(options => {
     JsonSerializerConfiguration.ConfigureMinimalApi(options.SerializerOptions);
 });
+builder.Services.AddHealthChecks();
 builder.Services.AddUptimeKuma();
 
 var app = builder.Build();
@@ -165,6 +168,19 @@ app.MapGet("/api/TransactionMobileConfiguration/{id}", MobileConfiguration.Handl
 app.MapPut("/api/TransactionMobileConfiguration/{id}", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.PutConfiguration);
 
 app.MapPost("/api/TransactionMobileLogging", MobileConfiguration.Handlers.TransactionMobileLoggingHandler.PostLogging);
+
+app.MapHealthChecks("health",
+    new HealthCheckOptions
+    {
+        Predicate = _ => true,
+        ResponseWriter = Shared.HealthChecks.HealthCheckMiddleware.WriteResponse
+    });
+app.MapHealthChecks("healthui",
+    new HealthCheckOptions
+    {
+        Predicate = _ => true,
+        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+    });
 
 InitializeDatabase(app).Wait(CancellationToken.None);
 
