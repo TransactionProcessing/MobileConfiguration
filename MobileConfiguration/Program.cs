@@ -1,4 +1,8 @@
+using HealthChecks.UI.Client;
+using HealthMonitoring.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using MobileConfiguration.Database;
 using MobileConfiguration.Repository;
 using NLog;
@@ -10,13 +14,12 @@ using Shared.General;
 using Shared.Logger;
 using Shared.Logger.TennantContext;
 using Shared.Middleware;
+using Shared.Monitoring;
 using Shared.Serialisation;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text.Json;
-using HealthChecks.UI.Client;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Shared.Monitoring;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -28,7 +31,11 @@ IConfigurationRoot configuration = new ConfigurationBuilder()
     .AddJsonFile("/home/txnproc/config/appsettings.json", true, true)
     .AddJsonFile($"/home/txnproc/config/appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
     .AddJsonFile($"/home/txnproc/config/appsettings.local.json", optional: true)
-    .AddEnvironmentVariables().Build();
+    .AddEnvironmentVariables()
+    .AddInMemoryCollection(new Dictionary<string, string?>
+    {
+        ["HealthMonitoring:Service:Version"] = Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "0.0.0.0"
+    }).Build();
 
 ConfigurationReader.Initialise(configuration);
 
@@ -141,8 +148,14 @@ builder.Services.AddSingleton(SystemTextJsonSerializer.GetDefaultJsonSerializerO
 builder.Services.ConfigureHttpJsonOptions(options => {
     JsonSerializerConfiguration.ConfigureMinimalApi(options.SerializerOptions);
 });
-builder.Services.AddHealthChecks();
-builder.Services.AddUptimeKuma();
+builder.Services.AddHealthChecks().AddSqlServer(
+    connectionString: ConfigurationReader.GetConnectionString("ConfigurationDatabase"),
+    healthQuery: "SELECT 1;",
+    name: "Config Database Server",
+    failureStatus: HealthStatus.Degraded,
+    tags: new[] { "db", "sql", "sqlserver" });
+
+builder.Services.AddHealthMonitoringRegistration(configuration);
 
 var app = builder.Build();
 
@@ -183,13 +196,6 @@ app.MapHealthChecks("healthui",
     });
 
 InitializeDatabase(app).Wait(CancellationToken.None);
-
-app.Lifetime.ApplicationStarted.Register(() =>
-{
-    app.RegisterWithUptimeKumaAsync()
-        .GetAwaiter()
-        .GetResult();
-});
 
 app.Run();
 
