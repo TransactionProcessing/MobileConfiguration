@@ -149,7 +149,7 @@ builder.Services.ConfigureHttpJsonOptions(options => {
     JsonSerializerConfiguration.ConfigureMinimalApi(options.SerializerOptions);
 });
 builder.Services.AddHealthChecks().AddSqlServer(
-    connectionString: ConfigurationReader.GetConnectionString("HealthCheck"),
+    connectionString: ConfigurationReader.GetConnectionString("ConfigurationDatabase"),
     healthQuery: "SELECT 1;",
     name: "Config Database Server",
     failureStatus: HealthStatus.Degraded,
