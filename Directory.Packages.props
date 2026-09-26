@@ -5,21 +5,21 @@
   <ItemGroup>
     <PackageVersion Include="AspNetCore.HealthChecks.SqlServer" Version="9.0.0" />
     <PackageVersion Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
-    <PackageVersion Include="HealthMonitoring.Client" Version="2026.9.2.21" />
+    <PackageVersion Include="HealthMonitoring.Client" Version="2026.9.3.34" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.InMemory" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.12" />
     <PackageVersion Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
-    <PackageVersion Include="NLog.Web.AspNetCore" Version="6.2.0" />
-    <PackageVersion Include="Shared" Version="2026.9.4" />
-    <PackageVersion Include="Shared.Logger" Version="2026.9.4" />
-    <PackageVersion Include="Shared.Results.Web" Version="2026.9.4" />
+    <PackageVersion Include="NLog.Web.AspNetCore" Version="6.2.1" />
+    <PackageVersion Include="Shared" Version="2026.9.7" />
+    <PackageVersion Include="Shared.Logger" Version="2026.9.7" />
+    <PackageVersion Include="Shared.Results.Web" Version="2026.9.7" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.12" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.12" />
-    <PackageVersion Include="Sentry.AspNetCore" Version="6.11.0" />
+    <PackageVersion Include="Sentry.AspNetCore" Version="6.11.1" />
   </ItemGroup>
 </Project>
