@@ -3,6 +3,7 @@ using HealthMonitoring.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using MobileConfiguration.Database;
+using MobileConfiguration.DataTransferObjects;
 using MobileConfiguration.Repository;
 using NLog;
 using NLog.Extensions.Logging;
@@ -17,6 +18,9 @@ using Shared.Serialisation;
 using System.Reflection;
 using System.Text.Json;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using SimpleResults;
+using TransactionProcessing.ApiDefaults;
+using MobileConfiguration.OpenApi;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
@@ -154,6 +158,15 @@ builder.Services.AddHealthChecks().AddSqlServer(
 
 builder.Services.AddHealthMonitoringRegistration(configuration);
 
+builder.Services.AddApiDefaults(options => {
+    options.Title = "Mobile Configuration";
+    options.Description = "API to maintain all aspects of mobile device configuration";
+});
+builder.Services.AddOpenApi(options =>
+{
+    options.AddOperationTransformer(new MobileConfigurationExamplesOperationTransformer());
+});
+
 var app = builder.Build();
 
 var serialiser = app.Services.GetRequiredService<IStringSerialiser>();
@@ -161,9 +174,7 @@ StringSerialiser.Initialise(serialiser);
 
 app.UseMiddleware<TenantMiddleware>();
 
-app.UseSwagger();
-app.UseSwaggerUI();
-
+app.UseApiDefaults();
 
 // Configure the HTTP request pipeline.
 app.UseAuthorization();
@@ -173,24 +184,60 @@ app.AddExceptionHandler();
 
 
 // Minimal API endpoints (handler pattern)
-app.MapPost("/api/TransactionMobileConfiguration", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.PostConfiguration);
-app.MapGet("/api/TransactionMobileConfiguration/{id}", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.GetConfiguration);
-app.MapPut("/api/TransactionMobileConfiguration/{id}", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.PutConfiguration);
+String configBaseRoute = "/api/transactionmobile/configuration";
 
-app.MapPost("/api/TransactionMobileLogging", MobileConfiguration.Handlers.TransactionMobileLoggingHandler.PostLogging);
+app.MapPost(configBaseRoute, MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.PostConfiguration)
+    .WithName("CreateTransactionMobileConfiguration")
+    .WithTags("Mobile Configuration")
+    .WithSummary("Create a mobile configuration")
+    .WithDescription("Creates a Transaction Mobile configuration and returns the persistence result. A failed persistence operation is returned as 400 Bad Request.")
+    .Accepts<Configuration>("application/json")
+    .Produces<Result>(StatusCodes.Status200OK)
+    .Produces<Result>(StatusCodes.Status400BadRequest);
+app.MapGet($"{configBaseRoute}/{{id}}", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.GetConfiguration)
+    .WithName("GetTransactionMobileConfiguration")
+    .WithTags("Mobile Configuration")
+    .WithSummary("Get a mobile configuration")
+    .WithDescription("Returns the Transaction Mobile configuration for the supplied identifier. The response contains the configured client secret.")
+    .Produces<ConfigurationResponse>(StatusCodes.Status200OK);
+app.MapPut($"{configBaseRoute}/{{id}}", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.PutConfiguration)
+    .WithName("UpsertTransactionMobileConfiguration")
+    .WithTags("Mobile Configuration")
+    .WithSummary("Create or update a mobile configuration")
+    .WithDescription("Updates the Transaction Mobile configuration for the supplied identifier, or creates it if it does not exist. For an existing record, the path identifier selects the record.")
+    .Accepts<Configuration>("application/json")
+    .Produces(StatusCodes.Status200OK);
+
+String loggingBaseRoute = "/api/transactionmobile/logging";
+
+app.MapPost(loggingBaseRoute, MobileConfiguration.Handlers.TransactionMobileLoggingHandler.PostLogging)
+    .WithName("SubmitTransactionMobileLogs")
+    .WithTags("Mobile Logging")
+    .WithSummary("Submit mobile log messages")
+    .WithDescription("Writes the submitted log messages to the service logger. The messages are not stored in the configuration database.")
+    .Accepts<List<LogMessage>>("application/json")
+    .Produces(StatusCodes.Status200OK);
 
 app.MapHealthChecks("health",
     new HealthCheckOptions
     {
         Predicate = _ => true,
         ResponseWriter = Shared.HealthChecks.HealthCheckMiddleware.WriteResponse
-    });
+    })
+    .WithName("HealthCheck")
+    .WithTags("Health")
+    .WithSummary("Check service and dependency health")
+    .WithDescription("Returns health-check details for the service and its configured dependencies.");
 app.MapHealthChecks("healthui",
     new HealthCheckOptions
     {
         Predicate = _ => true,
         ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-    });
+    })
+    .WithName("HealthCheckUi")
+    .WithTags("Health")
+    .WithSummary("Get health details for the monitoring UI")
+    .WithDescription("Returns health-check data formatted for the health monitoring UI.");
 
 InitializeDatabase(app).Wait(CancellationToken.None);
 
