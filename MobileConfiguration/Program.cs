@@ -80,9 +80,9 @@ ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
     builder.ClearProviders();
     builder.AddNLog(); // bridges Microsoft ILogger to NLog
 });
-ILogger logger = loggerFactory.CreateLogger("MobileConfiguration");
-Shared.Logger.Logger.Initialise(logger);
-
+LogManager.Setup().LoadConfigurationFromFile("NLog.config");
+NLog.Logger logger = LogManager.GetLogger("MobileConfiguration");
+Shared.Logger.Logger.Initialise(logger, "MobileConfiguration");
 
 builder.Host.UseWindowsService();
 
