@@ -1,4 +1,4 @@
-﻿using SimpleResults;
+using TransactionProcessing.UnionResults;
 
 namespace MobileConfiguration.Repository
 {
@@ -6,9 +6,9 @@ namespace MobileConfiguration.Repository
     using Database.Entities;
     using Microsoft.EntityFrameworkCore;
     using Models;
-    using Shared.EntityFramework;
-    using Shared.Exceptions;
-    using Shared.Serialisation;
+    using TransactionProcessing.Shared.EntityFramework;
+    using TransactionProcessing.Shared.Exceptions;
+    using TransactionProcessing.Shared.Serialisation;
 
     public interface IConfigurationRepository
     {
@@ -70,10 +70,10 @@ namespace MobileConfiguration.Repository
 
             try {
                 await resolvedContext.Context.SaveChangesAsync(cancellationToken);
-                return Result.Success("Configuration created successfully.");
+                return Result.Ok();
             }
             catch (Exception ex) {
-                return Result.Failure($"Failed to create configuration: {ex.Message}");
+                return Result.Fail(Error.Failure($"Failed to create configuration: {ex.Message}"));
             }
         }
 

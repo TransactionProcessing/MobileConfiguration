@@ -37,26 +37,6 @@ internal sealed class MobileConfigurationExamplesOperationTransformer : IOpenApi
         }
         """;
 
-    private const string CreateSuccessExample = """
-        {
-          "status": 0,
-          "isSuccess": true,
-          "isFailed": false,
-          "message": "Configuration created successfully.",
-          "errors": []
-        }
-        """;
-
-    private const string CreateFailureExample = """
-        {
-          "status": 6,
-          "isSuccess": false,
-          "isFailed": true,
-          "message": "Failed to create configuration: persistence failed.",
-          "errors": []
-        }
-        """;
-
     private const string LogMessagesExample = """
         [
           {
@@ -83,24 +63,19 @@ internal sealed class MobileConfigurationExamplesOperationTransformer : IOpenApi
         if (requestExample is not null
             && operation.RequestBody is OpenApiRequestBody requestBody
             && requestBody.Content is not null
-            && requestBody.Content.TryGetValue("application/json", out OpenApiMediaType? requestMediaType))
+            && requestBody.Content.TryGetValue("application/json", out IOpenApiMediaType? requestMediaType)
+            && requestMediaType is OpenApiMediaType openApiRequestMediaType)
         {
-            requestMediaType.Example = JsonNode.Parse(requestExample);
+            openApiRequestMediaType.Example = JsonNode.Parse(requestExample);
         }
 
         string? successResponseExample = (context.Description.HttpMethod, path) switch
         {
-            ("POST", "api/transactionmobile/configuration") => CreateSuccessExample,
             ("GET", "api/transactionmobile/configuration/{id}") => ConfigurationResponseExample,
             _ => null
         };
 
         SetResponseExample(operation, "200", successResponseExample);
-
-        if (context.Description.HttpMethod == "POST" && path == "api/transactionmobile/configuration")
-        {
-            SetResponseExample(operation, "400", CreateFailureExample);
-        }
 
         return Task.CompletedTask;
     }
@@ -111,9 +86,10 @@ internal sealed class MobileConfigurationExamplesOperationTransformer : IOpenApi
             && operation.Responses is not null
             && operation.Responses.TryGetValue(statusCode, out IOpenApiResponse? response)
             && response.Content is not null
-            && response.Content.TryGetValue("application/json", out OpenApiMediaType? mediaType))
+            && response.Content.TryGetValue("application/json", out IOpenApiMediaType? mediaType)
+            && mediaType is OpenApiMediaType openApiMediaType)
         {
-            mediaType.Example = JsonNode.Parse(example);
+            openApiMediaType.Example = JsonNode.Parse(example);
         }
     }
 }

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MobileConfiguration.DataTransferObjects;
-using Shared.Logger;
-using Shared.Serialisation;
+using TransactionProcessing.Shared.Logger;
+using TransactionProcessing.Shared.Serialisation;
 
 namespace MobileConfiguration.Handlers
 {

@@ -1,10 +1,10 @@
-﻿namespace MobileConfiguration.Database;
+namespace MobileConfiguration.Database;
 
 using System.Reflection;
 using Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Shared.Logger;
+using TransactionProcessing.Shared.Logger;
 
 public static class Extensions
 {
