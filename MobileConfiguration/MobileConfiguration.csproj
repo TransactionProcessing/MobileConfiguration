@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>8795d0e9-2509-41b8-b1e1-f28f8468338b</UserSecretsId>
@@ -22,9 +22,10 @@
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" />
     <PackageReference Include="NLog.Web.AspNetCore" />
-    <PackageReference Include="Shared" />
-    <PackageReference Include="Shared.Logger" />
-    <PackageReference Include="Shared.Results.Web" />
+    <PackageReference Include="TransactionProcessing.Shared" />
+    <PackageReference Include="TransactionProcessing.Shared.Logger" />
+    <PackageReference Include="TransactionProcessing.UnionResults" />
+    <PackageReference Include="TransactionProcessing.UnionResults.AspNetCore" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">

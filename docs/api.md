@@ -8,7 +8,7 @@ This document describes the HTTP endpoints and JSON data transfer objects expose
 - Enum values are represented as JSON integers, using the numeric values shown below.
 - The API startup configures authorization middleware but does not declare an authentication scheme or endpoint-specific authorization policy. Any protection supplied by hosting infrastructure is outside this contract.
 - Configuration responses include `clientSecret`. Treat them as sensitive and protect the API and its traffic accordingly.
-- The endpoint behavior below reflects the handlers and repository implementation. Error response bodies are produced by shared exception handling and are not specified here.
+- The endpoint behavior below reflects the handlers and repository implementation. Unhandled exceptions use shared exception handling; persistence failures returned as result values use Problem Details.
 
 ## Endpoints
 
@@ -22,8 +22,8 @@ Creates a Transaction Mobile configuration.
 
 **Responses:**
 
-- `200 OK` with the repository result when the create operation succeeds.
-- `400 Bad Request` with the repository result when persistence reports failure.
+- `200 OK` with an empty body when the create operation succeeds.
+- `400 Bad Request` with a Problem Details body when persistence reports failure.
 
 Example request:
 
@@ -41,27 +41,16 @@ Example request:
 }
 ```
 
-Example successful response (`200 OK`):
+Example persistence failure (`400 Bad Request`, trace ID abbreviated):
 
 ```json
 {
-  "status": 0,
-  "isSuccess": true,
-  "isFailed": false,
-  "message": "Configuration created successfully.",
-  "errors": []
-}
-```
-
-Example persistence failure (`400 Bad Request`):
-
-```json
-{
-  "status": 6,
-  "isSuccess": false,
-  "isFailed": true,
-  "message": "Failed to create configuration: persistence failed.",
-  "errors": []
+  "type": "https://httpstatuses.com/400",
+  "title": "Failed to create configuration: persistence failed.",
+  "status": 400,
+  "instance": "/api/transactionmobile/configuration",
+  "code": "Failure",
+  "traceId": "..."
 }
 ```
 

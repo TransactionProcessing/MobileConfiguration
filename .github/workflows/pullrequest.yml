@@ -16,6 +16,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2.3.4
 
+    - name: Setup .NET 11
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '11.0.x'
+
     - name: Restore Nuget Packages
       run: dotnet restore MobileConfiguration.sln --source ${{ secrets.PUBLICFEEDURL }} --source ${{ secrets.PRIVATEFEED_URL }}
 
@@ -38,4 +43,4 @@ jobs:
     #  if: ${{ failure() }}
     #  with:
     #    name: tracelogs
-    #    path: /home/txnproc/trace/   
+    #    path: /home/txnproc/trace/

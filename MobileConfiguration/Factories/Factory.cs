@@ -1,6 +1,6 @@
-﻿using MobileConfiguration.DataTransferObjects;
+using MobileConfiguration.DataTransferObjects;
 using MobileConfiguration.Models;
-using Shared.Serialisation;
+using TransactionProcessing.Shared.Serialisation;
 using HostAddress = MobileConfiguration.DataTransferObjects.HostAddress;
 using LoggingLevel = MobileConfiguration.DataTransferObjects.LoggingLevel;
 using ServiceType = MobileConfiguration.DataTransferObjects.ServiceType;

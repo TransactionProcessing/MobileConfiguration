@@ -8,18 +8,19 @@ using MobileConfiguration.Repository;
 using NLog;
 using NLog.Extensions.Logging;
 using Sentry.Extensibility;
-using Shared.EntityFramework;
-using Shared.Extensions;
-using Shared.General;
-using Shared.Logger;
-using Shared.Logger.TennantContext;
-using Shared.Middleware;
-using Shared.Serialisation;
+using TransactionProcessing.Shared.EntityFramework;
+using TransactionProcessing.Shared.Extensions;
+using TransactionProcessing.Shared.General;
+using TransactionProcessing.Shared.Logger;
+using TransactionProcessing.Shared.Logger.TennantContext;
+using TransactionProcessing.Shared.Middleware;
+using TransactionProcessing.Shared.Serialisation;
 using System.Reflection;
 using System.Text.Json;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using SimpleResults;
 using TransactionProcessing.ApiDefaults;
+using TransactionProcessing.UnionResults;
+using TransactionProcessing.UnionResults.AspNetCore;
 using MobileConfiguration.OpenApi;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 using LogLevel = Microsoft.Extensions.Logging.LogLevel;
@@ -69,7 +70,7 @@ LogManager.Setup(b =>
     b.SetupLogFactory(setup =>
     {
         setup.AddCallSiteHiddenAssembly(typeof(NlogLogger).Assembly);
-        setup.AddCallSiteHiddenAssembly(typeof(Shared.Logger.Logger).Assembly);
+        setup.AddCallSiteHiddenAssembly(typeof(TransactionProcessing.Shared.Logger.Logger).Assembly);
         setup.AddCallSiteHiddenAssembly(typeof(TenantMiddleware).Assembly);
     });
     b.LoadConfigurationFromFile(nlogConfigPath);
@@ -82,7 +83,7 @@ ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
 });
 LogManager.Setup().LoadConfigurationFromFile("NLog.config");
 NLog.Logger logger = LogManager.GetLogger("MobileConfiguration");
-Shared.Logger.Logger.Initialise(logger, "MobileConfiguration");
+TransactionProcessing.Shared.Logger.Logger.Initialise(logger, "MobileConfiguration");
 
 builder.Host.UseWindowsService();
 
@@ -162,6 +163,7 @@ builder.Services.AddApiDefaults(options => {
     options.Title = "Mobile Configuration";
     options.Description = "API to maintain all aspects of mobile device configuration";
 });
+builder.Services.AddUnionResults(options => options.Map(ErrorType.Failure, StatusCodes.Status400BadRequest));
 builder.Services.AddOpenApi(options =>
 {
     options.AddOperationTransformer(new MobileConfigurationExamplesOperationTransformer());
@@ -186,27 +188,28 @@ app.AddExceptionHandler();
 // Minimal API endpoints (handler pattern)
 String configBaseRoute = "/api/transactionmobile/configuration";
 
-app.MapPost(configBaseRoute, MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.PostConfiguration)
+var configurationApi = app.MapGroup(configBaseRoute).AddUnionResultFilter();
+
+configurationApi.MapPost("", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.PostConfiguration)
     .WithName("CreateTransactionMobileConfiguration")
     .WithTags("Mobile Configuration")
     .WithSummary("Create a mobile configuration")
-    .WithDescription("Creates a Transaction Mobile configuration and returns the persistence result. A failed persistence operation is returned as 400 Bad Request.")
+    .WithDescription("Creates a Transaction Mobile configuration. Persistence failures return a Problem Details response with status 400.")
     .Accepts<Configuration>("application/json")
-    .Produces<Result>(StatusCodes.Status200OK)
-    .Produces<Result>(StatusCodes.Status400BadRequest);
-app.MapGet($"{configBaseRoute}/{{id}}", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.GetConfiguration)
+    .ProducesUnionResult();
+configurationApi.MapGet("/{id}", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.GetConfiguration)
     .WithName("GetTransactionMobileConfiguration")
     .WithTags("Mobile Configuration")
     .WithSummary("Get a mobile configuration")
     .WithDescription("Returns the Transaction Mobile configuration for the supplied identifier. The response contains the configured client secret.")
-    .Produces<ConfigurationResponse>(StatusCodes.Status200OK);
-app.MapPut($"{configBaseRoute}/{{id}}", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.PutConfiguration)
+    .ProducesUnionResult<ConfigurationResponse>();
+configurationApi.MapPut("/{id}", MobileConfiguration.Handlers.TransactionMobileConfigurationHandler.PutConfiguration)
     .WithName("UpsertTransactionMobileConfiguration")
     .WithTags("Mobile Configuration")
     .WithSummary("Create or update a mobile configuration")
     .WithDescription("Updates the Transaction Mobile configuration for the supplied identifier, or creates it if it does not exist. For an existing record, the path identifier selects the record.")
     .Accepts<Configuration>("application/json")
-    .Produces(StatusCodes.Status200OK);
+    .ProducesUnionResult();
 
 String loggingBaseRoute = "/api/transactionmobile/logging";
 
@@ -222,7 +225,7 @@ app.MapHealthChecks("health",
     new HealthCheckOptions
     {
         Predicate = _ => true,
-        ResponseWriter = Shared.HealthChecks.HealthCheckMiddleware.WriteResponse
+        ResponseWriter = TransactionProcessing.Shared.HealthChecks.HealthCheckMiddleware.WriteResponse
     })
     .WithName("HealthCheck")
     .WithTags("Health")

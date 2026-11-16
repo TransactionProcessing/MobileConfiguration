@@ -21,6 +21,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2.3.4
 
+    - name: Setup .NET 11
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '11.0.x'
+
     - name: Set Up Variables
       run: echo "action_url=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >> $GITHUB_ENV
 
