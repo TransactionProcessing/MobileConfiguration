@@ -1,4 +1,5 @@
 using TransactionProcessing.UnionResults;
+using Results = TransactionProcessing.UnionResults.Results;
 
 namespace MobileConfiguration.Repository
 {
@@ -70,10 +71,10 @@ namespace MobileConfiguration.Repository
 
             try {
                 await resolvedContext.Context.SaveChangesAsync(cancellationToken);
-                return Result.Ok();
+                return Results.Ok();
             }
             catch (Exception ex) {
-                return Result.Fail(Error.Failure($"Failed to create configuration: {ex.Message}"));
+                return Results.Fail(new Error(ErrorType.Failure, $"Failed to create configuration: {ex.Message}"));
             }
         }
 

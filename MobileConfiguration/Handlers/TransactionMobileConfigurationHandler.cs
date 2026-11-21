@@ -3,6 +3,7 @@ using MobileConfiguration.Factories;
 using MobileConfiguration.Models;
 using MobileConfiguration.Repository;
 using TransactionProcessing.UnionResults;
+using Results = TransactionProcessing.UnionResults.Results;
 
 namespace MobileConfiguration.Handlers
 {
@@ -27,7 +28,7 @@ namespace MobileConfiguration.Handlers
 
             ConfigurationResponse response = Factory.ToConfigurationResponse(configurationModel);
 
-            return Result<ConfigurationResponse>.Ok(response);
+            return Results.Ok(response);
         }
 
         public static async Task<Result> PutConfiguration(IConfigurationRepository repository,
@@ -39,7 +40,7 @@ namespace MobileConfiguration.Handlers
 
             await repository.UpdateConfiguration(ConfigurationType.TransactionMobile, id, configurationModel, cancellationToken);
 
-            return Result.Ok();
+            return Results.Ok();
         }
     }
 }
