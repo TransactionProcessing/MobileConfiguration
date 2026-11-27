@@ -19,6 +19,7 @@ using System.Reflection;
 using System.Text.Json;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using TransactionProcessing.ApiDefaults;
+using TransactionProcessing.CertificateDefaults;
 using TransactionProcessing.UnionResults;
 using TransactionProcessing.UnionResults.AspNetCore;
 using MobileConfiguration.OpenApi;
@@ -86,6 +87,7 @@ NLog.Logger logger = LogManager.GetLogger("MobileConfiguration");
 TransactionProcessing.Shared.Logger.Logger.Initialise(logger, "MobileConfiguration");
 
 builder.Host.UseWindowsService();
+builder.WebHost.ConfigureTransactionProcessingHttps();
 
 String path = Assembly.GetExecutingAssembly().Location;
 path = Path.GetDirectoryName(path);
