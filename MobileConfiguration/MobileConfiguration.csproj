@@ -38,10 +38,14 @@
     <PackageReference Include="Sentry.AspNetCore" />
     <PackageReference Include="System.Security.Cryptography.Pkcs" />
     <PackageReference Include="TransactionProcessing.ApiDefaults" />
+    <PackageReference Include="TransactionProcessing.CertificateDefaults" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Update="appsettings.Staging.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Update="hosting.development.json">
